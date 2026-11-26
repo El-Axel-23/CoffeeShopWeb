@@ -1,0 +1,106 @@
+/* Tarjeta de recuperación */
+.tarjeta-recuperar {
+    max-width: 450px;
+}
+
+/* Enlace para regresar */
+.enlace-regresar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--cafe);
+    font-size: 13px;
+    text-decoration: none;
+    font-weight: 600;
+    margin-bottom: 25px;
+}
+
+.enlace-regresar:hover {
+    color: var(--naranja);
+}
+
+/* Marca de la cafetería */
+.tarjeta-recuperar .marca-login {
+    margin-bottom: 25px;
+}
+
+/* Icono de seguridad */
+.icono-recuperar {
+    width: 65px;
+    height: 65px;
+    background-color: var(--crema);
+    color: var(--naranja);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 25px;
+    font-size: 30px;
+}
+
+/* Título */
+.tarjeta-recuperar h1 {
+    font-size: 26px;
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+/* Descripción */
+.tarjeta-recuperar .subtitulo {
+    text-align: center;
+    line-height: 1.6;
+    margin-bottom: 25px;
+}
+
+/* Requisitos de la contraseña */
+.requisitos-contrasena {
+    font-size: 12px;
+    color: var(--cafe-claro);
+    background-color: var(--fondo);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.requisitos-contrasena p {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.requisitos-contrasena ul {
+    padding-left: 20px;
+    margin-bottom: 0;
+}
+
+.requisitos-contrasena li {
+    margin-bottom: 4px;
+}
+
+/* Mensaje de confirmación */
+.tarjeta-recuperar .alert-success {
+    font-size: 13px;
+    border-radius: 12px;
+    line-height: 1.5;
+}
+
+/* Adaptación a celulares */
+@media (max-width: 576px) {
+
+    .tarjeta-recuperar {
+        padding: 25px 22px;
+    }
+
+    .tarjeta-recuperar h1 {
+        font-size: 23px;
+    }
+
+    .icono-recuperar {
+        width: 55px;
+        height: 55px;
+        font-size: 25px;
+    }
+
+    .enlace-regresar {
+        margin-bottom: 20px;
+    }
+}

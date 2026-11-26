@@ -1,0 +1,494 @@
+/* Colores principales */
+:root {
+    --fondo: #FAF5EC;
+    --blanco: #FFFFFF;
+    --moka: #482519;
+    --cafe: #C3470D;
+    --cafe-hover: #A83809;
+    --crema: #F2E6D5;
+    --borde: #EBD8C2;
+    --texto-secundario: #805542;
+}
+
+/* Configuración general */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--fondo);
+    color: var(--moka);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Barra de navegación */
+header {
+    background-color: var(--blanco);
+    border-bottom: 1px solid var(--borde);
+}
+
+.navbar {
+    min-height: 75px;
+    padding: 12px 0;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--moka);
+    font-size: 16px;
+    font-weight: 500;
+    margin-right: 30px;
+}
+
+.navbar-brand i {
+    font-size: 26px;
+}
+
+.navbar-brand:hover {
+    color: var(--cafe);
+}
+
+.navbar-nav {
+    gap: 14px;
+}
+
+.navbar .nav-link {
+    color: var(--moka);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.navbar .nav-link:hover {
+    color: var(--cafe);
+}
+
+/* Iconos de navegación */
+.iconos-nav {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-size: 20px;
+}
+
+.icono-perfil {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--crema);
+    color: var(--moka);
+    border-radius: 50%;
+    text-decoration: none;
+}
+
+.icono-perfil:hover {
+    color: var(--cafe);
+}
+
+/* Contenido principal */
+.contenido-registro {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 45px 20px;
+}
+
+.contenido-registro .container {
+    max-width: 1120px;
+}
+
+/* Imagen del café */
+.imagen-registro {
+    display: block;
+    width: 100%;
+    height: 600px;
+    object-fit: cover;
+    border-radius: 20px;
+}
+
+/* Tarjeta del formulario */
+.tarjeta-registro {
+    width: 100%;
+    max-width: 430px;
+    margin: auto;
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 8px 25px rgba(72, 37, 25, 0.06);
+}
+
+/* Encabezado de registro */
+.encabezado-registro {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.encabezado-registro h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--moka);
+}
+
+.boton-regresar {
+    color: var(--moka);
+    text-decoration: none;
+    font-size: 21px;
+    display: flex;
+    align-items: center;
+}
+
+.boton-regresar:hover {
+    color: var(--cafe);
+}
+
+.icono-cafe {
+    font-size: 26px;
+    color: var(--moka);
+}
+
+.subtitulo {
+    font-size: 13px;
+    color: var(--texto-secundario);
+    margin-bottom: 15px;
+}
+
+/* Campos del formulario */
+.campo-registro {
+    background-color: var(--crema);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 8px 13px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+}
+
+.campo-registro:focus-within {
+    border-color: var(--cafe);
+}
+
+.campo-registro label {
+    display: block;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--moka);
+    margin-bottom: 3px;
+}
+
+.campo-registro input {
+    width: 100%;
+    background-color: transparent;
+    border: none;
+    outline: none;
+    color: var(--moka);
+    font-family: inherit;
+    font-size: 13px;
+    padding: 2px 0;
+}
+
+.campo-registro input::placeholder {
+    color: var(--texto-secundario);
+    opacity: 1;
+}
+
+/* Evitar cambios de color al autocompletar */
+.campo-registro input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px var(--crema) inset;
+    -webkit-text-fill-color: var(--moka);
+}
+
+/* Campos de contraseña */
+.campo-contrasena {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.campo-contrasena input {
+    flex: 1;
+    min-width: 0;
+}
+
+.boton-ojo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background-color: transparent;
+    color: var(--moka);
+    font-size: 18px;
+    padding: 0 3px;
+    cursor: pointer;
+}
+
+.boton-ojo:hover {
+    color: var(--cafe);
+}
+
+.requisito-contrasena {
+    font-size: 11px;
+    margin-top: -5px;
+    margin-bottom: 12px;
+    color: var(--texto-secundario);
+}
+
+/* Términos y condiciones */
+.terminos-registro {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding-left: 0;
+    margin-top: 14px;
+    margin-bottom: 18px;
+}
+
+.terminos-registro .form-check-input {
+    width: 17px;
+    height: 17px;
+    margin: 2px 0 0;
+    flex-shrink: 0;
+    background-color: var(--crema);
+    border: 1px solid var(--borde);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.terminos-registro .form-check-input:checked {
+    background-color: var(--cafe);
+    border-color: var(--cafe);
+}
+
+.terminos-registro .form-check-input:focus {
+    border-color: var(--cafe);
+    box-shadow: 0 0 0 3px rgba(195, 71, 13, 0.15);
+}
+
+.terminos-registro .form-check-label {
+    color: var(--moka);
+    font-size: 12px;
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+/* Botón para crear cuenta */
+.boton-registro {
+    min-height: 47px;
+    background-color: var(--cafe);
+    border: 1px solid var(--cafe);
+    border-radius: 11px;
+    color: var(--blanco);
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 4px 8px rgba(195, 71, 13, 0.18);
+    transition: background-color 0.2s;
+}
+
+.boton-registro:hover,
+.boton-registro:focus-visible,
+.boton-registro:active {
+    background-color: var(--cafe-hover);
+    border-color: var(--cafe-hover);
+    color: var(--blanco);
+}
+
+/* Separador */
+.separador {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 17px 0;
+}
+
+.separador span {
+    flex: 1;
+    height: 1px;
+    background-color: var(--borde);
+}
+
+.separador p {
+    margin: 0;
+    color: var(--texto-secundario);
+    font-size: 12px;
+}
+
+/* Botones de Google y Apple */
+.boton-social {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 43px;
+    margin-bottom: 12px;
+    background-color: var(--blanco);
+    color: var(--moka);
+    border: 1px solid var(--borde);
+    border-radius: 10px;
+    font-size: 12px;
+}
+
+.boton-social i {
+    position: absolute;
+    left: 16px;
+    font-size: 20px;
+}
+
+.boton-social:hover {
+    background-color: var(--fondo);
+    border-color: var(--borde);
+    color: var(--moka);
+}
+
+/* Servicios todavía no disponibles */
+.boton-social:disabled {
+    opacity: 1;
+    background-color: var(--blanco);
+    border-color: var(--borde);
+    color: var(--moka);
+}
+
+/* Enlace para iniciar sesión */
+.enlace-login {
+    text-align: center;
+    color: var(--moka);
+    font-size: 12px;
+    margin-top: 16px;
+}
+
+.enlace-login a {
+    color: var(--cafe);
+    font-weight: 600;
+    margin-left: 4px;
+    text-decoration: underline;
+}
+
+.enlace-login a:hover {
+    color: var(--cafe-hover);
+}
+
+/* Mensajes de validación */
+.alert {
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    margin-bottom: 15px;
+}
+
+/* Pie de página */
+.pie-pagina {
+    background-color: var(--crema);
+    padding: 22px 0;
+    font-size: 12px;
+    color: var(--moka);
+}
+
+.enlaces-footer {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.enlaces-footer a {
+    color: var(--moka);
+    text-decoration: none;
+}
+
+.enlaces-footer a:hover {
+    color: var(--cafe);
+    text-decoration: underline;
+}
+
+/* Adaptación para tablets */
+@media (max-width: 991px) {
+
+    .navbar-nav {
+        gap: 4px;
+        padding-top: 15px;
+    }
+
+    .iconos-nav {
+        margin-top: 15px;
+        margin-bottom: 10px;
+    }
+
+    .contenido-registro {
+        padding: 35px 15px;
+    }
+
+    .imagen-registro {
+        max-width: 600px;
+        height: 300px;
+        margin: auto;
+    }
+
+    .tarjeta-registro {
+        max-width: 500px;
+    }
+}
+
+/* Adaptación para celulares */
+@media (max-width: 576px) {
+
+    .navbar {
+        min-height: 65px;
+    }
+
+    .navbar-brand {
+        font-size: 14px;
+        margin-right: 10px;
+    }
+
+    .contenido-registro {
+        padding: 25px 10px;
+    }
+
+    .contenido-registro .row {
+        --bs-gutter-y: 1.5rem;
+    }
+
+    .imagen-registro {
+        height: 200px;
+        border-radius: 16px;
+    }
+
+    .tarjeta-registro {
+        padding: 22px;
+        border-radius: 16px;
+    }
+
+    .encabezado-registro h1 {
+        font-size: 23px;
+    }
+
+    .campo-registro input {
+        font-size: 14px;
+    }
+
+    .boton-registro {
+        min-height: 48px;
+    }
+
+    .boton-social {
+        min-height: 45px;
+    }
+
+    .pie-pagina {
+        text-align: center;
+        padding: 18px 10px;
+    }
+
+    .pie-pagina .d-flex {
+        flex-direction: column;
+        gap: 12px;
+    }
+}

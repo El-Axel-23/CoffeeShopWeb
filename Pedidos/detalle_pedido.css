@@ -1,0 +1,471 @@
+/* Colores principales */
+:root {
+    --fondo: #FAF5EC;
+    --blanco: #FFFFFF;
+    --moka: #482519;
+    --cafe: #C3470D;
+    --cafe-hover: #A83809;
+    --crema: #F2E6D5;
+    --borde: #EBD8C2;
+    --texto-secundario: #805542;
+}
+
+/* Configuración general */
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--fondo);
+    color: var(--moka);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Barra de navegación */
+header {
+    background-color: var(--blanco);
+    border-bottom: 1px solid var(--borde);
+}
+
+.navbar {
+    min-height: 75px;
+    padding: 12px 0;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--moka);
+    font-size: 16px;
+    margin-right: 30px;
+}
+
+.navbar-brand i {
+    font-size: 26px;
+}
+
+.navbar-nav {
+    gap: 14px;
+}
+
+.navbar .nav-link {
+    color: var(--moka);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.navbar-brand:hover,
+.navbar .nav-link:hover {
+    color: var(--cafe);
+}
+
+/* Sección seleccionada */
+.navbar .enlace-activo {
+    color: var(--cafe);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+/* Iconos de navegación */
+.iconos-nav {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-size: 20px;
+}
+
+.icono-perfil {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--crema);
+    color: var(--moka);
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* Contenido principal */
+.contenido-detalle {
+    flex: 1;
+    padding: 40px 15px;
+}
+
+.contenedor-detalle {
+    width: 100%;
+    max-width: 750px;
+    margin: 0 auto;
+}
+
+/* Encabezado */
+.encabezado-detalle {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.encabezado-detalle h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* Botón regresar */
+.boton-regresar {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--crema);
+    color: var(--moka);
+    border-radius: 50%;
+    text-decoration: none;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.boton-regresar:hover {
+    background-color: var(--borde);
+    color: var(--moka);
+}
+
+/* Tarjeta principal */
+.tarjeta-detalle {
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 18px;
+    padding: 30px;
+    box-shadow: 0 3px 10px rgba(72, 37, 25, 0.04);
+}
+
+/* Información general del pedido */
+.informacion-pedido {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.informacion-pedido h2 {
+    font-size: 21px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.fecha-pedido {
+    font-size: 13px;
+    color: var(--texto-secundario);
+    margin: 0;
+}
+
+/* Separadores */
+.tarjeta-detalle hr {
+    border: 0;
+    border-top: 1px solid var(--borde);
+    opacity: 1;
+    margin: 24px 0;
+}
+
+/* Estado del pedido */
+.estado-pedido {
+    display: inline-block;
+    border-radius: 20px;
+    padding: 7px 15px;
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+/* Estados disponibles */
+.estado-pendiente {
+    background-color: #FFF0D5;
+    color: #805500;
+}
+
+.estado-en-preparacion {
+    background-color: var(--cafe);
+    color: var(--blanco);
+}
+
+.estado-listo {
+    background-color: #E0EFDD;
+    color: #35682D;
+}
+
+.estado-en-camino {
+    background-color: #E1EAF5;
+    color: #315A85;
+}
+
+.estado-entregado {
+    background-color: var(--crema);
+    color: var(--moka);
+}
+
+.estado-cancelado {
+    background-color: #F6DDDD;
+    color: #A52A2A;
+}
+
+/* Productos del pedido */
+.seccion-productos h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+/* Fila de cada producto */
+.producto-detalle {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--borde);
+}
+
+.producto-detalle:first-child {
+    padding-top: 0;
+}
+
+.producto-detalle:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* Imagen del producto */
+.imagen-producto {
+    width: 90px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 12px;
+    background-color: var(--crema);
+    flex-shrink: 0;
+}
+
+/* Cuando no existe una imagen */
+.imagen-sin-producto {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+}
+
+/* Información del producto */
+.informacion-producto {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.nombre-producto {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.opciones-producto {
+    font-size: 12px;
+    color: var(--texto-secundario);
+    margin-bottom: 5px;
+}
+
+.cantidad-producto {
+    font-size: 12px;
+    color: var(--texto-secundario);
+    margin-bottom: 5px;
+}
+
+.precio-unitario {
+    font-size: 12px;
+    color: var(--texto-secundario);
+    margin: 0;
+}
+
+/* Importe del producto */
+.precio-producto {
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* Información de entrega y pago */
+.informacion-entrega {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.informacion-entrega i {
+    font-size: 25px;
+    color: var(--moka);
+}
+
+.etiqueta-info {
+    font-size: 12px;
+    color: var(--texto-secundario);
+    margin-bottom: 5px;
+}
+
+.valor-info {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+}
+
+/* Resumen de la compra */
+.resumen-compra {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.fila-resumen {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 14px;
+}
+
+.resumen-compra hr {
+    margin: 5px 0;
+}
+
+/* Total del pedido */
+.fila-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 21px;
+    font-weight: 700;
+}
+
+.fila-total span:last-child {
+    color: var(--cafe);
+    font-size: 25px;
+}
+
+/* Botón volver a mis pedidos */
+.boton-volver {
+    width: 100%;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 24px;
+    background-color: var(--cafe);
+    color: var(--blanco);
+    border: 1px solid var(--cafe);
+    border-radius: 11px;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 4px 8px rgba(195, 71, 13, 0.15);
+}
+
+.boton-volver:hover,
+.boton-volver:focus-visible {
+    background-color: var(--cafe-hover);
+    border-color: var(--cafe-hover);
+    color: var(--blanco);
+}
+
+/* Pie de página */
+.pie-pagina {
+    background-color: var(--crema);
+    padding: 22px 0;
+    color: var(--moka);
+    font-size: 12px;
+}
+
+.enlaces-footer {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.enlaces-footer a {
+    color: var(--moka);
+    text-decoration: none;
+}
+
+.enlaces-footer a:hover {
+    color: var(--cafe);
+    text-decoration: underline;
+}
+
+/* Adaptación para tablets */
+@media (max-width: 991px) {
+
+    .navbar-nav {
+        gap: 4px;
+        padding-top: 15px;
+    }
+
+    .iconos-nav {
+        margin: 15px 0;
+    }
+}
+
+/* Adaptación para celulares */
+@media (max-width: 576px) {
+
+    .navbar {
+        min-height: 65px;
+    }
+
+    .contenido-detalle {
+        padding: 25px 5px;
+    }
+
+    .encabezado-detalle h1 {
+        font-size: 22px;
+    }
+
+    .tarjeta-detalle {
+        padding: 18px;
+        border-radius: 14px;
+    }
+
+    .informacion-pedido h2 {
+        font-size: 18px;
+    }
+
+    .producto-detalle {
+        gap: 10px;
+    }
+
+    .imagen-producto {
+        width: 65px;
+        height: 65px;
+    }
+
+    .nombre-producto {
+        font-size: 13px;
+    }
+
+    .precio-producto {
+        font-size: 13px;
+    }
+
+    .fila-total {
+        font-size: 19px;
+    }
+
+    .fila-total span:last-child {
+        font-size: 22px;
+    }
+
+    .pie-pagina {
+        text-align: center;
+    }
+
+    .pie-pagina .d-flex {
+        flex-direction: column;
+        gap: 12px;
+    }
+}

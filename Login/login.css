@@ -1,0 +1,439 @@
+/* Colores principales */
+:root {
+    --fondo: #FBF6ED;
+    --crema: #F3E7D6;
+    --cafe: #482A20;
+    --cafe-claro: #795548;
+    --naranja: #C24C15;
+    --naranja-oscuro: #A83C0D;
+    --blanco: #FFFFFF;
+    --borde: #EADBC9;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: var(--fondo);
+    color: var(--cafe);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Barra de navegación */
+header {
+    background-color: var(--blanco);
+    border-bottom: 1px solid var(--borde);
+}
+
+.navbar {
+    min-height: 80px;
+}
+
+.navbar-brand {
+    color: var(--cafe);
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-right: 28px;
+}
+
+.navbar-brand i {
+    font-size: 25px;
+}
+
+.navbar-brand:hover {
+    color: var(--naranja);
+}
+
+.navbar-nav {
+    gap: 8px;
+}
+
+.nav-link {
+    color: var(--cafe);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 12px !important;
+    transition: color 0.2s;
+}
+
+.nav-link:hover {
+    color: var(--naranja);
+}
+
+/* Iconos de navegación */
+.iconos-nav {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-size: 21px;
+}
+
+.icono-perfil {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-color: var(--crema);
+    color: var(--cafe);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+}
+
+.icono-perfil:hover {
+    color: var(--naranja);
+}
+
+/* Contenido principal */
+.contenido-login {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 45px 0;
+}
+
+.contenido-login .container {
+    max-width: 1200px;
+}
+
+/* Imagen del café */
+.imagen-login {
+    width: 100%;
+    height: 650px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 22px;
+    display: block;
+}
+
+/* Tarjeta del formulario */
+.tarjeta-login {
+    width: 100%;
+    max-width: 420px;
+    margin: auto;
+    padding: 36px;
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(72, 42, 32, 0.06);
+}
+
+/* Nombre de la cafetería */
+.marca-login {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 35px;
+    font-size: 14px;
+}
+
+.marca-login i {
+    font-size: 27px;
+}
+
+/* Título del formulario */
+.tarjeta-login h1 {
+    font-size: 29px;
+    font-weight: 700;
+    letter-spacing: -0.8px;
+    margin-bottom: 8px;
+}
+
+.subtitulo {
+    color: var(--cafe-claro);
+    font-size: 14px;
+    margin-bottom: 23px;
+}
+
+/* Campos del formulario */
+.campo-login {
+    background-color: var(--crema);
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 8px 14px;
+    transition: border-color 0.2s;
+}
+
+.campo-login:focus-within {
+    border-color: var(--naranja);
+}
+
+.campo-login label {
+    display: block;
+    font-size: 11px;
+    color: var(--cafe);
+    margin-bottom: 2px;
+}
+
+.campo-login .form-control {
+    background-color: transparent;
+    border: none;
+    color: var(--cafe);
+    padding: 0;
+    font-size: 14px;
+    min-height: 23px;
+    box-shadow: none;
+}
+
+.campo-login .form-control:focus {
+    background-color: transparent;
+    color: var(--cafe);
+    box-shadow: none;
+}
+
+.campo-login .form-control::placeholder {
+    color: var(--cafe-claro);
+    opacity: 1;
+}
+
+/* Campo de contraseña */
+.campo-contrasena {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.campo-contrasena input {
+    flex: 1;
+    min-width: 0;
+}
+
+.boton-ojo {
+    background: transparent;
+    border: none;
+    color: var(--cafe);
+    font-size: 19px;
+    padding: 0 3px;
+    cursor: pointer;
+}
+
+/* Recuperar contraseña */
+.recuperar-contrasena {
+    text-align: right;
+    margin-top: 8px;
+    margin-bottom: 20px;
+}
+
+.recuperar-contrasena a {
+    color: var(--naranja);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+/* Botón de iniciar sesión */
+.boton-login {
+    background-color: var(--naranja);
+    color: var(--blanco);
+    border: none;
+    border-radius: 13px;
+    min-height: 54px;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 4px 8px rgba(194, 76, 21, 0.15);
+    transition: background-color 0.2s;
+}
+
+.boton-login:hover,
+.boton-login:focus-visible,
+.boton-login:active {
+    background-color: var(--naranja-oscuro) !important;
+    color: var(--blanco) !important;
+}
+
+/* Separador */
+.separador {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 23px 0;
+    color: var(--cafe-claro);
+    font-size: 13px;
+}
+
+.separador::before,
+.separador::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background-color: var(--borde);
+}
+
+/* Botones de Google y Apple */
+.boton-social {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--blanco);
+    color: var(--cafe);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    min-height: 50px;
+    padding: 10px 35px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    transition: background-color 0.2s;
+}
+
+.boton-social i {
+    position: absolute;
+    left: 19px;
+    font-size: 20px;
+}
+
+.boton-social:hover {
+    background-color: var(--fondo);
+    border-color: var(--borde);
+    color: var(--cafe);
+}
+
+.boton-social:disabled {
+    opacity: 1;
+    background-color: var(--blanco);
+    color: var(--cafe);
+    border-color: var(--borde);
+}
+
+/* Enlace para registrarse */
+.registro-login {
+    text-align: center;
+    font-size: 13px;
+    margin-top: 24px;
+}
+
+.registro-login a {
+    color: var(--naranja);
+    font-weight: 600;
+    text-decoration: underline;
+    margin-left: 5px;
+}
+
+.recuperar-contrasena a:hover,
+.registro-login a:hover {
+    color: var(--naranja-oscuro);
+}
+
+/* Mensajes de validación */
+.campo-login:has(.is-invalid) {
+    border-color: #DC3545;
+}
+
+.campo-login .form-control.is-invalid {
+    background-image: none;
+    padding-right: 0;
+}
+
+.invalid-feedback {
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.alert {
+    font-size: 13px;
+    border-radius: 10px;
+}
+
+/* Pie de página */
+.pie-pagina {
+    background-color: var(--crema);
+    color: var(--cafe);
+    padding: 24px 0;
+    font-size: 13px;
+}
+
+.enlaces-footer {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.enlaces-footer a {
+    color: var(--cafe);
+    text-decoration: none;
+}
+
+.enlaces-footer a:hover {
+    color: var(--naranja);
+}
+
+/* Adaptación a tabletas */
+@media (max-width: 991px) {
+
+    .navbar-nav {
+        padding-top: 15px;
+        gap: 0;
+    }
+
+    .iconos-nav {
+        padding: 10px 12px;
+    }
+
+    .imagen-login {
+        height: 350px;
+        max-width: 650px;
+        margin: auto;
+    }
+
+    .tarjeta-login {
+        max-width: 470px;
+    }
+
+    .contenido-login {
+        padding: 30px 0;
+    }
+}
+
+/* Adaptación a celulares */
+@media (max-width: 576px) {
+
+    .navbar {
+        min-height: 65px;
+    }
+
+    .navbar-brand {
+        font-size: 15px;
+        margin-right: 0;
+    }
+
+    .contenido-login {
+        padding: 25px 0;
+    }
+
+    .imagen-login {
+        display: none;
+    }
+
+    .tarjeta-login {
+        padding: 26px 22px;
+        border-radius: 18px;
+    }
+
+    .tarjeta-login h1 {
+        font-size: 26px;
+    }
+
+    .marca-login {
+        margin-bottom: 25px;
+    }
+
+    .pie-pagina {
+        text-align: center;
+        padding: 20px 15px;
+        font-size: 11px;
+    }
+
+    .pie-pagina .container > div {
+        justify-content: center !important;
+        gap: 15px;
+    }
+}

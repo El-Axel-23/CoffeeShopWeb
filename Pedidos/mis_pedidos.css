@@ -1,0 +1,343 @@
+/* Colores principales */
+:root {
+    --fondo: #FAF5EC;
+    --blanco: #FFFFFF;
+    --moka: #482519;
+    --cafe: #C3470D;
+    --cafe-hover: #A83809;
+    --crema: #F2E6D5;
+    --borde: #EBD8C2;
+    --texto-secundario: #805542;
+}
+
+/* Configuración general */
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--fondo);
+    color: var(--moka);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Barra de navegación */
+header {
+    background-color: var(--blanco);
+    border-bottom: 1px solid var(--borde);
+}
+
+.navbar {
+    min-height: 75px;
+    padding: 12px 0;
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--moka);
+    font-size: 16px;
+    margin-right: 30px;
+}
+
+.navbar-brand i {
+    font-size: 26px;
+}
+
+.navbar-nav {
+    gap: 14px;
+}
+
+.navbar .nav-link {
+    color: var(--moka);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.navbar-brand:hover,
+.navbar .nav-link:hover {
+    color: var(--cafe);
+}
+
+/* Resaltar la sección actual */
+.navbar .enlace-activo {
+    color: var(--cafe);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+/* Iconos de navegación */
+.iconos-nav {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-size: 20px;
+}
+
+.icono-perfil {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--crema);
+    color: var(--moka);
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* Contenido principal */
+.contenido-pedidos {
+    flex: 1;
+    display: flex;
+    padding: 40px 15px;
+}
+
+.contenedor-pedidos {
+    display: flex;
+    flex-direction: column;
+}
+
+.contenido-pedidos h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 22px;
+}
+
+/* Tarjetas de pedidos */
+.tarjeta-pedido {
+    display: block;
+    height: 100%;
+    padding: 15px;
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 16px;
+    color: var(--moka);
+    text-decoration: none;
+    box-shadow: 0 2px 5px rgba(72, 37, 25, 0.04);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+/* Efecto al seleccionar un pedido */
+.tarjeta-pedido:hover,
+.tarjeta-pedido:focus-visible {
+    color: var(--moka);
+    border-color: var(--cafe);
+    box-shadow: 0 3px 10px rgba(72, 37, 25, 0.08);
+}
+
+/* Número y fecha del pedido */
+.encabezado-pedido {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+/* Productos comprados */
+.productos-pedido {
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    margin-bottom: 12px;
+}
+
+/* Total del pedido */
+.total-pedido {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+/* Etiqueta del estado */
+.estado-pedido {
+    display: inline-block;
+    width: fit-content;
+    border-radius: 20px;
+    padding: 5px 13px;
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+/* Pedido pendiente */
+.estado-pendiente {
+    background-color: #FFF0D5;
+    color: #805500;
+}
+
+/* Pedido en preparación */
+.estado-en-preparacion {
+    background-color: var(--cafe);
+    color: var(--blanco);
+}
+
+/* Pedido listo */
+.estado-listo {
+    background-color: #E0EFDD;
+    color: #35682D;
+}
+
+/* Pedido en camino */
+.estado-en-camino {
+    background-color: #E1EAF5;
+    color: #315A85;
+}
+
+/* Pedido entregado */
+.estado-entregado {
+    background-color: var(--crema);
+    color: var(--moka);
+}
+
+/* Pedido cancelado */
+.estado-cancelado {
+    background-color: #F6DDDD;
+    color: #A52A2A;
+}
+
+/* Pantalla sin pedidos */
+.pedidos-vacios {
+    flex: 1;
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 25px 15px;
+}
+
+/* Círculo con icono */
+.icono-pedidos {
+    width: 95px;
+    height: 95px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--crema);
+    border-radius: 50%;
+    margin-bottom: 22px;
+}
+
+.icono-pedidos i {
+    font-size: 44px;
+    color: var(--moka);
+}
+
+.pedidos-vacios h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 18px;
+}
+
+.pedidos-vacios p {
+    max-width: 310px;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+/* Botón ver menú */
+.boton-menu {
+    width: 100%;
+    max-width: 300px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--cafe);
+    border: 1px solid var(--cafe);
+    border-radius: 11px;
+    color: var(--blanco);
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 4px 8px rgba(195, 71, 13, 0.15);
+}
+
+.boton-menu:hover,
+.boton-menu:focus-visible {
+    background-color: var(--cafe-hover);
+    border-color: var(--cafe-hover);
+    color: var(--blanco);
+}
+
+/* Pie de página */
+.pie-pagina {
+    background-color: var(--crema);
+    padding: 22px 0;
+    color: var(--moka);
+    font-size: 12px;
+}
+
+.enlaces-footer {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.enlaces-footer a {
+    color: var(--moka);
+    text-decoration: none;
+}
+
+.enlaces-footer a:hover {
+    color: var(--cafe);
+    text-decoration: underline;
+}
+
+/* Adaptación para tablets */
+@media (max-width: 991px) {
+
+    .navbar-nav {
+        gap: 4px;
+        padding-top: 15px;
+    }
+
+    .iconos-nav {
+        margin: 15px 0;
+    }
+}
+
+/* Adaptación para celulares */
+@media (max-width: 576px) {
+
+    .navbar {
+        min-height: 65px;
+    }
+
+    .contenido-pedidos {
+        padding: 25px 10px;
+    }
+
+    .contenido-pedidos h1 {
+        font-size: 23px;
+    }
+
+    .tarjeta-pedido {
+        padding: 15px;
+    }
+
+    .pedidos-vacios {
+        min-height: 320px;
+    }
+
+    .icono-pedidos {
+        width: 80px;
+        height: 80px;
+    }
+
+    .icono-pedidos i {
+        font-size: 36px;
+    }
+
+    .pie-pagina {
+        text-align: center;
+    }
+
+    .pie-pagina .d-flex {
+        flex-direction: column;
+        gap: 12px;
+    }
+}

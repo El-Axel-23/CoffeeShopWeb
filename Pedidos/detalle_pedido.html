@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Detalle del pedido | Coffee Shop</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <!-- Iconos -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Estilos propios -->
+    <link rel="stylesheet" href="detalle_pedido.css">
+
+</head>
+
+<body>
+
+    <!-- Barra de navegación -->
+    <header>
+
+        <nav class="navbar navbar-expand-lg">
+
+            <div class="container">
+
+                <a class="navbar-brand" href="../index.php">
+
+                    <i class="bi bi-cup-hot"></i>
+                    COFFEE SHOP
+
+                </a>
+
+                <button class="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#menuNavegacion"
+                        aria-label="Abrir menú">
+
+                    <span class="navbar-toggler-icon"></span>
+
+                </button>
+
+                <div class="collapse navbar-collapse"
+                     id="menuNavegacion">
+
+                    <ul class="navbar-nav me-auto">
+
+                        <li class="nav-item">
+
+                            <a class="nav-link" href="../index.php">
+                                Inicio
+                            </a>
+
+                        </li>
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                               href="../index.php#menu">
+                                Menú
+                            </a>
+
+                        </li>
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                               href="../Favoritos/favoritos.php">
+                                Favoritos
+                            </a>
+
+                        </li>
+
+                        <li class="nav-item">
+
+                            <a class="nav-link enlace-activo"
+                               href="mis_pedidos.php">
+                                Mis pedidos
+                            </a>
+
+                        </li>
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                               href="../ubicacion.php">
+                                Ubicación
+                            </a>
+
+                        </li>
+
+                        <li class="nav-item">
+
+                            <a class="nav-link"
+                               href="../ayuda.php">
+                                Ayuda
+                            </a>
+
+                        </li>
+
+                        <li class="nav-item">
+
+                            <a class="nav-link" href="#">
+                                Carrito ({{cantidad_carrito}})
+                            </a>
+
+                        </li>
+
+                    </ul>
+
+                    <!-- Iconos del usuario -->
+                    <div class="iconos-nav">
+
+                        <i class="bi bi-bell"></i>
+
+                        <a href="../perfil.php"
+                           class="icono-perfil"
+                           aria-label="Mi perfil">
+
+                            {{iniciales}}
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </nav>
+
+    </header>
+
+    <!-- Contenido principal -->
+    <main class="contenido-detalle">
+
+        <div class="container">
+
+            <div class="contenedor-detalle">
+
+                <!-- Encabezado -->
+                <div class="encabezado-detalle">
+
+                    <a href="mis_pedidos.php"
+                       class="boton-regresar"
+                       aria-label="Regresar a mis pedidos">
+
+                        <i class="bi bi-arrow-left"></i>
+
+                    </a>
+
+                    <h1>Detalle del pedido</h1>
+
+                </div>
+
+                <!-- Información del pedido -->
+                <article class="tarjeta-detalle">
+
+                    <div class="informacion-pedido">
+
+                        <div>
+
+                            <h2>Pedido #{{id_pedido}}</h2>
+
+                            <p class="fecha-pedido">
+
+                                {{fecha_pedido}}
+
+                            </p>
+
+                        </div>
+
+                        <span class="estado-pedido {{clase_estado}}">
+
+                            {{estado_pedido}}
+
+                        </span>
+
+                    </div>
+
+                    <hr>
+
+                    <!-- Productos comprados -->
+                    <section class="seccion-productos">
+
+                        <h3>Productos del pedido</h3>
+
+                        <div id="listaProductos">
+
+                            {{lista_productos}}
+
+                        </div>
+
+                    </section>
+
+                    <hr>
+
+                    <!-- Entrega y método de pago -->
+                    <div class="row g-4">
+
+                        <div class="col-md-6">
+
+                            <div class="informacion-entrega">
+
+                                <i class="bi bi-shop"></i>
+
+                                <div>
+
+                                    <p class="etiqueta-info">
+
+                                        Tipo de entrega
+
+                                    </p>
+
+                                    <p class="valor-info">
+
+                                        {{tipo_entrega}}
+
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <div class="informacion-entrega">
+
+                                <i class="bi bi-wallet2"></i>
+
+                                <div>
+
+                                    <p class="etiqueta-info">
+
+                                        Método de pago
+
+                                    </p>
+
+                                    <p class="valor-info">
+
+                                        {{metodo_pago}}
+
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <hr>
+
+                    <!-- Resumen de la compra -->
+                    <section class="resumen-compra">
+
+                        <div class="fila-resumen">
+
+                            <span>Subtotal</span>
+
+                            <span>${{subtotal}}</span>
+
+                        </div>
+
+                        <div class="fila-resumen">
+
+                            <span>Impuestos</span>
+
+                            <span>${{impuestos}}</span>
+
+                        </div>
+
+                        <hr>
+
+                        <div class="fila-total">
+
+                            <span>Total</span>
+
+                            <span>${{total}}</span>
+
+                        </div>
+
+                    </section>
+
+                </article>
+
+                <!-- Regresar al historial -->
+                <a href="mis_pedidos.php"
+                   class="btn boton-volver">
+
+                    VOLVER A MIS PEDIDOS
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Pie de página -->
+    <footer class="pie-pagina">
+
+        <div class="container">
+
+            <div class="d-flex flex-wrap
+                        justify-content-between
+                        align-items-center">
+
+                <span>
+
+                    Coffee Shop · Un momento delicioso en cada sorbo
+
+                </span>
+
+                <div class="enlaces-footer">
+
+                    <a href="../index.php#menu">Menú</a>
+
+                    <span>·</span>
+
+                    <a href="../ubicacion.php">Ubicación</a>
+
+                    <span>·</span>
+
+                    <a href="../ayuda.php">Ayuda</a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </footer>
+
+    <!-- JavaScript de Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+
+</html>

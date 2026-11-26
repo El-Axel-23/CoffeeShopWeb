@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Iniciar sesión | Coffee Shop</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <!-- Iconos -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Estilos propios -->
+    <link rel="stylesheet" href="login.css">
+</head>
+
+<body>
+
+    <!-- Barra de navegación -->
+    <header>
+        <nav class="navbar navbar-expand-lg">
+            <div class="container">
+
+                <a class="navbar-brand" href="../index.php">
+                    <i class="bi bi-cup-hot"></i>
+                    COFFEE SHOP
+                </a>
+
+                <button class="navbar-toggler" type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#menuNavegacion"
+                        aria-label="Abrir menú">
+
+                    <span class="navbar-toggler-icon"></span>
+
+                </button>
+
+                <div class="collapse navbar-collapse" id="menuNavegacion">
+
+                    <ul class="navbar-nav me-auto">
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.php">Inicio</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="../index.php#menu">Menú</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Favoritos</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Mis pedidos</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="../ubicacion.php">Ubicación</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="../ayuda.php">Ayuda</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">Carrito</a>
+                        </li>
+
+                    </ul>
+
+                    <div class="iconos-nav">
+
+                        <i class="bi bi-bell"></i>
+
+                        <a href="login.php" class="icono-perfil"
+                           aria-label="Iniciar sesión">
+
+                            <i class="bi bi-person"></i>
+
+                        </a>
+
+                    </div>
+
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Contenido principal -->
+    <main class="contenido-login">
+
+        <div class="container">
+
+            <div class="row align-items-center justify-content-center g-5">
+
+                <!-- Imagen de cafetería -->
+                <div class="col-lg-6">
+
+                    <img src="../img/cafe-login.jpg"
+                         class="imagen-login"
+                         alt="Taza de café capuchino">
+
+                </div>
+
+                <!-- Formulario de inicio de sesión -->
+                <div class="col-lg-5">
+
+                    <div class="tarjeta-login">
+
+                        <div class="marca-login">
+
+                            <i class="bi bi-cup-hot"></i>
+                            <span>COFFEE SHOP</span>
+
+                        </div>
+
+                        <h1>Bienvenido de nuevo</h1>
+
+                        <p class="subtitulo">
+                            Inicia sesión para pedir tu café favorito
+                        </p>
+
+                        <!-- Mensaje de registro exitoso -->
+                        <div id="mensajeExito"
+                             class="alert alert-success {{clase_exito}}"
+                             role="status">
+
+                            <i class="bi bi-check-circle-fill me-1"></i>
+
+                            {{mensaje_exito}}
+
+                        </div>
+
+                        <!-- Mensaje de error -->
+                        <div id="mensajeError"
+                             class="alert alert-danger {{clase_error}}"
+                             role="alert">
+
+                            {{mensaje_error}}
+
+                        </div>
+
+                        <form id="formLogin"
+                              action="login.php"
+                              method="POST"
+                              novalidate>
+
+                            <!-- Token de seguridad -->
+                            <input type="hidden"
+                                   name="csrf_token"
+                                   id="csrf_token"
+                                   value="{{csrf_token}}">
+
+                            <!-- Correo electrónico -->
+                            <div class="mb-3">
+
+                                <div class="campo-login">
+
+                                    <label for="correo">
+                                        Correo electrónico
+                                    </label>
+
+                                    <input type="email"
+                                           class="form-control"
+                                           id="correo"
+                                           name="correo"
+                                           placeholder="Escribe tu correo electrónico"
+                                           autocomplete="email"
+                                           maxlength="120"
+                                           required>
+
+                                </div>
+
+                                <div class="invalid-feedback"
+                                     id="errorCorreo">
+                                </div>
+
+                            </div>
+
+                            <!-- Contraseña -->
+                            <div class="mb-2">
+
+                                <div class="campo-login">
+
+                                    <label for="contrasena">
+                                        Contraseña
+                                    </label>
+
+                                    <div class="campo-contrasena">
+
+                                        <input type="password"
+                                               class="form-control"
+                                               id="contrasena"
+                                               name="contrasena"
+                                               placeholder="Escribe tu contraseña"
+                                               autocomplete="current-password"
+                                               required>
+
+                                        <button type="button"
+                                                id="btnMostrarContrasena"
+                                                class="boton-ojo"
+                                                aria-label="Mostrar contraseña">
+
+                                            <i class="bi bi-eye-slash"
+                                               id="iconoOjo"></i>
+
+                                        </button>
+
+                                    </div>
+
+                                </div>
+
+                                <div class="invalid-feedback"
+                                     id="errorContrasena">
+                                </div>
+
+                            </div>
+
+                            <!-- Recuperación de contraseña -->
+                            <div class="recuperar-contrasena">
+
+                                <a href="recuperar.php">
+                                    ¿Olvidaste tu contraseña?
+                                </a>
+
+                            </div>
+
+                            <button type="submit"
+                                    class="btn boton-login w-100">
+
+                                INICIAR SESIÓN
+
+                            </button>
+
+                        </form>
+
+                        <!-- Separador -->
+                        <div class="separador">
+                            <span>o</span>
+                        </div>
+
+                        <!-- Acceso con Google -->
+                        <button type="button"
+                                class="btn boton-social w-100"
+                                disabled>
+
+                            <i class="bi bi-google"></i>
+
+                            <span>Continuar con Google</span>
+
+                        </button>
+
+                        <!-- Acceso con Apple -->
+                        <button type="button"
+                                class="btn boton-social w-100"
+                                disabled>
+
+                            <i class="bi bi-apple"></i>
+
+                            <span>Continuar con Apple</span>
+
+                        </button>
+
+                        <!-- Registro de usuario -->
+                        <div class="registro-login">
+
+                            ¿No tienes cuenta?
+
+                            <a href="registro.php">
+                                Regístrate
+                            </a>
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Pie de página -->
+    <footer class="pie-pagina">
+
+        <div class="container">
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center">
+
+                <span>
+                    Coffee Shop · Un momento delicioso en cada sorbo
+                </span>
+
+                <div class="enlaces-footer">
+
+                    <a href="../index.php#menu">Menú</a>
+                    <span>·</span>
+
+                    <a href="../ubicacion.php">Ubicación</a>
+                    <span>·</span>
+
+                    <a href="../ayuda.php">Ayuda</a>
+
+                </div>
+
+            </div>
+        </div>
+
+    </footer>
+
+    <!-- JavaScript de Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- JavaScript propio -->
+    <script src="login.js"></script>
+
+</body>
+
+</html>

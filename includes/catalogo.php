@@ -240,17 +240,16 @@ $resMenu = $stmt->fetchAll();
 
                         </span>
 
-                        <button type="button"
-                                data-agregar-carrito="<?= $idProducto ?>"
-                                class="w-9 h-9 rounded-xl bg-cafe
-                                       text-white flex items-center
-                                       justify-center hover:bg-cafeHover
-                                       transition-colors shrink-0"
-                                aria-label="Agregar">
+                        <a href="personalizar.php?id=<?= $idProducto ?>"
+                           class="w-9 h-9 rounded-xl bg-cafe
+                                  text-white flex items-center
+                                  justify-center hover:bg-cafeHover
+                                  transition-colors shrink-0"
+                           aria-label="Personalizar producto">
 
                             <i class="bi bi-plus-lg text-base"></i>
 
-                        </button>
+                        </a>
 
                     </div>
 
@@ -354,17 +353,16 @@ $resMenu = $stmt->fetchAll();
 
                         </span>
 
-                        <button type="button"
-                                data-agregar-carrito="<?= $idProducto ?>"
-                                class="w-9 h-9 rounded-xl bg-cafe
-                                       text-white flex items-center
-                                       justify-center hover:bg-cafeHover
-                                       transition-colors shrink-0"
-                                aria-label="Agregar">
+                        <a href="personalizar.php?id=<?= $idProducto ?>"
+                           class="w-9 h-9 rounded-xl bg-cafe
+                                  text-white flex items-center
+                                  justify-center hover:bg-cafeHover
+                                  transition-colors shrink-0"
+                           aria-label="Personalizar producto">
 
                             <i class="bi bi-plus-lg text-base"></i>
 
-                        </button>
+                        </a>
 
                     </div>
 

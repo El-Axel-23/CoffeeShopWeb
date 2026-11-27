@@ -7,6 +7,7 @@ verificarSesion('../Login/login.php');
 
 header('Cache-Control: no-store');
 
+// Importar la conexión
 require_once __DIR__ . '/../config/conexion.php';
 
 $idUsuario = $_SESSION['id_usuario'];
@@ -30,20 +31,101 @@ $sql = "SELECT p.id_producto,
         WHERE f.id_usuario = ?
         ORDER BY f.fecha DESC";
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$idUsuario]);
+// Preparar la consulta
+$stmt = mysqli_prepare($conexion, $sql);
 
-$favoritos = $stmt->fetchAll();
+if (!$stmt) {
+
+    error_log('Error al preparar favoritos: ' . mysqli_error($conexion));
+
+    http_response_code(500);
+    exit('No fue posible consultar los favoritos.');
+}
+
+// Asignar el ID del usuario
+mysqli_stmt_bind_param($stmt, "i", $idUsuario);
+
+// Ejecutar la consulta
+if (!mysqli_stmt_execute($stmt)) {
+
+    error_log('Error al consultar favoritos: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible consultar los favoritos.');
+}
+
+// Obtener los resultados
+$resultado = mysqli_stmt_get_result($stmt);
+
+if (!$resultado) {
+
+    error_log('Error al obtener favoritos: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible obtener los favoritos.');
+}
+
+$favoritos = [];
+
+// Guardar los productos favoritos
+while ($producto = mysqli_fetch_assoc($resultado)) {
+
+    $favoritos[] = $producto;
+}
+
+mysqli_free_result($resultado);
+
+mysqli_stmt_close($stmt);
 
 // Consultar cantidad de productos en el carrito
 $sql = "SELECT COALESCE(SUM(cantidad), 0)
         FROM carrito_items
         WHERE id_usuario = ?";
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$idUsuario]);
+$stmt = mysqli_prepare($conexion, $sql);
 
-$cantidadCarrito = (int) $stmt->fetchColumn();
+if (!$stmt) {
+
+    error_log('Error al preparar carrito: ' . mysqli_error($conexion));
+
+    http_response_code(500);
+    exit('No fue posible consultar el carrito.');
+}
+
+mysqli_stmt_bind_param($stmt, "i", $idUsuario);
+
+if (!mysqli_stmt_execute($stmt)) {
+
+    error_log('Error al consultar carrito: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible consultar el carrito.');
+}
+
+// Obtener la cantidad del carrito
+$cantidadCarrito = 0;
+
+mysqli_stmt_bind_result($stmt, $cantidadCarrito);
+
+if (mysqli_stmt_fetch($stmt) !== true) {
+
+    error_log('Error al obtener la cantidad del carrito.');
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible obtener la cantidad del carrito.');
+}
+
+$cantidadCarrito = (int) $cantidadCarrito;
+
+mysqli_stmt_close($stmt);
 
 // Obtener las iniciales del usuario
 $palabras = explode(' ', trim($_SESSION['nombre_completo']));

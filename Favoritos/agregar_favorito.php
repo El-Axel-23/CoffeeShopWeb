@@ -5,6 +5,7 @@ require_once __DIR__ . '/../Login/sesion.php';
 
 verificarSesion('../Login/login.php');
 
+// Importar la conexión
 require_once __DIR__ . '/../config/conexion.php';
 
 // Comprobar el método de envío
@@ -49,10 +50,30 @@ try {
             WHERE id_producto = ?
             AND disponible = 1";
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([$idProducto]);
+    $stmt = mysqli_prepare($conexion, $sql);
 
-    if (!$stmt->fetch()) {
+    if (!$stmt) {
+
+        throw new RuntimeException(mysqli_error($conexion));
+    }
+
+    mysqli_stmt_bind_param($stmt, "i", $idProducto);
+
+    if (!mysqli_stmt_execute($stmt) ||
+        !mysqli_stmt_store_result($stmt)) {
+
+        $error = mysqli_stmt_error($stmt);
+
+        mysqli_stmt_close($stmt);
+
+        throw new RuntimeException($error);
+    }
+
+    $existeProducto = mysqli_stmt_num_rows($stmt) > 0;
+
+    mysqli_stmt_close($stmt);
+
+    if (!$existeProducto) {
 
         $_SESSION['estado_favoritos'] = 'error';
 
@@ -64,10 +85,35 @@ try {
                 WHERE id_usuario = ?
                 AND id_producto = ?";
 
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$idUsuario, $idProducto]);
+        $stmt = mysqli_prepare($conexion, $sql);
 
-        if (!$stmt->fetch()) {
+        if (!$stmt) {
+
+            throw new RuntimeException(mysqli_error($conexion));
+        }
+
+        mysqli_stmt_bind_param(
+            $stmt,
+            "ii",
+            $idUsuario,
+            $idProducto
+        );
+
+        if (!mysqli_stmt_execute($stmt) ||
+            !mysqli_stmt_store_result($stmt)) {
+
+            $error = mysqli_stmt_error($stmt);
+
+            mysqli_stmt_close($stmt);
+
+            throw new RuntimeException($error);
+        }
+
+        $existeFavorito = mysqli_stmt_num_rows($stmt) > 0;
+
+        mysqli_stmt_close($stmt);
+
+        if (!$existeFavorito) {
 
             // Agregar producto a favoritos
             $sql = "INSERT INTO favoritos (
@@ -75,30 +121,49 @@ try {
                         id_producto
                     ) VALUES (?, ?)";
 
-            $stmt = $pdo->prepare($sql);
+            $stmt = mysqli_prepare($conexion, $sql);
 
-            $stmt->execute([
+            if (!$stmt) {
+
+                throw new RuntimeException(mysqli_error($conexion));
+            }
+
+            mysqli_stmt_bind_param(
+                $stmt,
+                "ii",
                 $idUsuario,
                 $idProducto
-            ]);
+            );
+
+            if (!mysqli_stmt_execute($stmt)) {
+
+                $codigoError = mysqli_stmt_errno($stmt);
+                $error = mysqli_stmt_error($stmt);
+
+                mysqli_stmt_close($stmt);
+
+                // Evitar errores por favoritos duplicados
+                if ($codigoError != 1062) {
+
+                    throw new RuntimeException($error);
+                }
+
+            } else {
+
+                mysqli_stmt_close($stmt);
+            }
         }
 
         $_SESSION['estado_favoritos'] = 'agregado';
     }
 
-} catch (PDOException $e) {
+} catch (RuntimeException $e) {
 
-    // Evitar errores por favoritos duplicados
-    if (($e->errorInfo[1] ?? 0) == 1062) {
+    error_log(
+        'Error al agregar favorito: ' . $e->getMessage()
+    );
 
-        $_SESSION['estado_favoritos'] = 'agregado';
-
-    } else {
-
-        error_log('Error al agregar favorito: ' . $e->getMessage());
-
-        $_SESSION['estado_favoritos'] = 'error';
-    }
+    $_SESSION['estado_favoritos'] = 'error';
 }
 
 // Regresar al catálogo

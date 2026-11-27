@@ -7,35 +7,80 @@ verificarSesion('../Login/login.php');
 
 header('Cache-Control: no-store');
 
+// Importar la conexión
 require_once __DIR__ . '/../config/conexion.php';
 
 // Obtener el ID del usuario
-$idUsuario = $_SESSION['id_usuario'];
+$idUsuario = (int) $_SESSION['id_usuario'];
 
 // Consultar los datos actuales
 $sql = "SELECT nombre_completo, correo, telefono, contrasena_hash
         FROM usuarios
         WHERE id_usuario = ? AND activo = 1";
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$idUsuario]);
+// Preparar la consulta
+$stmt = mysqli_prepare($conexion, $sql);
 
-$usuario = $stmt->fetch();
+if (!$stmt) {
 
+    error_log('Error al preparar perfil: ' . mysqli_error($conexion));
+
+    http_response_code(500);
+    exit('No fue posible consultar el perfil.');
+}
+
+// Asignar el ID del usuario y ejecutar
+if (!mysqli_stmt_bind_param($stmt, "i", $idUsuario) ||
+    !mysqli_stmt_execute($stmt)) {
+
+    error_log('Error al consultar perfil: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible consultar el perfil.');
+}
+
+// Obtener los resultados
+$resultado = mysqli_stmt_get_result($stmt);
+
+if (!$resultado) {
+
+    error_log('Error al obtener perfil: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible obtener el perfil.');
+}
+
+$usuario = mysqli_fetch_assoc($resultado);
+
+mysqli_free_result($resultado);
+
+mysqli_stmt_close($stmt);
+
+// Comprobar que el usuario exista
 if (!$usuario) {
+
     finalizarSesion('../Login/login.php', 'usuario_inactivo');
+
     exit;
 }
 
 // Generar token de seguridad
 if (!isset($_SESSION['csrf_perfil'])) {
+
     $_SESSION['csrf_perfil'] = bin2hex(random_bytes(32));
 }
 
+// Obtener los datos actuales
 $nombre = $usuario['nombre_completo'];
 $correo = $usuario['correo'];
 $telefono = $usuario['telefono'] ?? '';
 $error = '';
+
+$transaccionActiva = false;
 
 // Recibir los datos del formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -66,7 +111,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $telefono = trim($nuevoTelefono);
 
         // Comprobar si cambió el correo
-        $cambioCorreo = strcasecmp($correo, $usuario['correo']) !== 0;
+        $cambioCorreo = strcasecmp(
+            $correo,
+            $usuario['correo']
+        ) !== 0;
 
         // Validar nombre
         if ($nombre === '' || mb_strlen($nombre) > 120) {
@@ -88,7 +136,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Comprobar contraseña si cambia el correo
         } elseif ($cambioCorreo &&
                   (!is_string($usuario['contrasena_hash']) ||
-                   !password_verify($contrasena, $usuario['contrasena_hash']))) {
+                   !password_verify(
+                       $contrasena,
+                       $usuario['contrasena_hash']
+                   ))) {
 
             $error = 'La contraseña actual es incorrecta o no fue ingresada.';
 
@@ -100,16 +151,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $sql = "SELECT id_usuario FROM usuarios
                         WHERE correo = ? AND id_usuario != ?";
 
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([$correo, $idUsuario]);
+                $stmt = mysqli_prepare($conexion, $sql);
 
-                if ($stmt->fetch()) {
+                if (!$stmt) {
+
+                    throw new RuntimeException(
+                        mysqli_error($conexion)
+                    );
+                }
+
+                // Asignar los parámetros
+                if (!mysqli_stmt_bind_param(
+                        $stmt,
+                        "si",
+                        $correo,
+                        $idUsuario
+                    ) ||
+                    !mysqli_stmt_execute($stmt) ||
+                    !mysqli_stmt_store_result($stmt)) {
+
+                    $mensajeError = mysqli_stmt_error($stmt);
+
+                    mysqli_stmt_close($stmt);
+
+                    throw new RuntimeException($mensajeError);
+                }
+
+                // Comprobar si el correo ya existe
+                $correoExiste = mysqli_stmt_num_rows($stmt) > 0;
+
+                mysqli_stmt_close($stmt);
+
+                if ($correoExiste) {
 
                     $error = 'Este correo ya está registrado por otro usuario.';
 
                 } else {
 
-                    $pdo->beginTransaction();
+                    // Iniciar transacción
+                    if (!mysqli_begin_transaction($conexion)) {
+
+                        throw new RuntimeException(
+                            mysqli_error($conexion)
+                        );
+                    }
+
+                    $transaccionActiva = true;
+
+                    // Guardar NULL si no se ingresó un teléfono
+                    $telefonoBD = $telefono === ''
+                        ? null : $telefono;
 
                     // Actualizar los datos del usuario
                     $sql = "UPDATE usuarios
@@ -118,14 +209,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 telefono = ?
                             WHERE id_usuario = ? AND activo = 1";
 
-                    $stmt = $pdo->prepare($sql);
+                    $stmt = mysqli_prepare($conexion, $sql);
 
-                    $stmt->execute([
-                        $nombre,
-                        $correo,
-                        $telefono === '' ? null : $telefono,
-                        $idUsuario
-                    ]);
+                    if (!$stmt) {
+
+                        throw new RuntimeException(
+                            mysqli_error($conexion)
+                        );
+                    }
+
+                    // Asignar los datos del usuario
+                    if (!mysqli_stmt_bind_param(
+                            $stmt,
+                            "sssi",
+                            $nombre,
+                            $correo,
+                            $telefonoBD,
+                            $idUsuario
+                        ) ||
+                        !mysqli_stmt_execute($stmt)) {
+
+                        $codigoError = mysqli_stmt_errno($stmt);
+
+                        $mensajeError = mysqli_stmt_error($stmt);
+
+                        mysqli_stmt_close($stmt);
+
+                        throw new RuntimeException(
+                            $mensajeError,
+                            $codigoError
+                        );
+                    }
+
+                    mysqli_stmt_close($stmt);
 
                     // Invalidar enlaces de recuperación anteriores
                     if ($cambioCorreo) {
@@ -134,14 +250,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 SET usado = 1
                                 WHERE id_usuario = ?";
 
-                        $stmt = $pdo->prepare($sql);
-                        $stmt->execute([$idUsuario]);
+                        $stmt = mysqli_prepare($conexion, $sql);
+
+                        if (!$stmt) {
+
+                            throw new RuntimeException(
+                                mysqli_error($conexion)
+                            );
+                        }
+
+                        if (!mysqli_stmt_bind_param(
+                                $stmt,
+                                "i",
+                                $idUsuario
+                            ) ||
+                            !mysqli_stmt_execute($stmt)) {
+
+                            $mensajeError = mysqli_stmt_error($stmt);
+
+                            mysqli_stmt_close($stmt);
+
+                            throw new RuntimeException($mensajeError);
+                        }
+
+                        mysqli_stmt_close($stmt);
                     }
 
-                    $pdo->commit();
+                    // Confirmar los cambios
+                    if (!mysqli_commit($conexion)) {
+
+                        throw new RuntimeException(
+                            mysqli_error($conexion)
+                        );
+                    }
+
+                    $transaccionActiva = false;
 
                     // Actualizar los datos de la sesión
                     $_SESSION['nombre_completo'] = $nombre;
+
                     $_SESSION['correo'] = $correo;
 
                     // Eliminar el token utilizado
@@ -149,22 +296,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     // Regresar a la vista del perfil
                     header('Location: index.php', true, 303);
+
                     exit;
                 }
 
-            } catch (PDOException $e) {
+            } catch (RuntimeException $e) {
 
-                if ($pdo->inTransaction()) {
-                    $pdo->rollBack();
+                // Cancelar los cambios si ocurre un error
+                if ($transaccionActiva) {
+
+                    mysqli_rollback($conexion);
                 }
 
-                if (($e->errorInfo[1] ?? 0) == 1062) {
+                // Comprobar si el correo está duplicado
+                if ($e->getCode() === 1062) {
 
                     $error = 'Este correo ya está registrado por otro usuario.';
 
                 } else {
 
-                    error_log('Error al editar perfil: ' . $e->getMessage());
+                    error_log(
+                        'Error al editar perfil: ' .
+                        $e->getMessage()
+                    );
 
                     $error = 'No fue posible actualizar el perfil.';
                 }
@@ -175,11 +329,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Conservar el correo original si ocurrió un error
 if ($error !== '') {
+
     $correo = $usuario['correo'];
 }
 
 // Cargar la vista HTML
 $html = file_get_contents(__DIR__ . '/editar_perfil.html');
+
+if ($html === false || trim($html) === '') {
+
+    http_response_code(500);
+
+    exit('No fue posible cargar la vista de editar perfil.');
+}
 
 // Mostrar u ocultar el mensaje de error
 $claseError = $error === '' ? 'd-none' : '';

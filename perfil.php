@@ -8,7 +8,11 @@ verificarSesion('Login/login.php');
 
 header('Cache-Control: no-store');
 
+// Conexión a la base de datos
 require_once __DIR__ . '/config/conexion.php';
+
+// Obtener el ID del usuario
+$idUsuario = (int) $_SESSION['id_usuario'];
 
 // Buscar los datos del usuario
 $sql = "SELECT nombre_completo, correo
@@ -16,27 +20,85 @@ $sql = "SELECT nombre_completo, correo
         WHERE id_usuario = ?
         AND activo = 1";
 
-$stmt = $pdo->prepare($sql);
+// Preparar la consulta
+$stmt = mysqli_prepare($conexion, $sql);
 
-$stmt->execute([$_SESSION['id_usuario']]);
+if (!$stmt) {
 
-$usuario = $stmt->fetch();
+    error_log(
+        'Error al preparar perfil: ' .
+        mysqli_error($conexion)
+    );
+
+    http_response_code(500);
+
+    exit('No fue posible consultar el perfil.');
+}
+
+// Asignar el ID del usuario y ejecutar
+if (!mysqli_stmt_bind_param($stmt, "i", $idUsuario) ||
+    !mysqli_stmt_execute($stmt)) {
+
+    error_log(
+        'Error al consultar perfil: ' .
+        mysqli_stmt_error($stmt)
+    );
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+
+    exit('No fue posible consultar el perfil.');
+}
+
+// Obtener los resultados
+$resultado = mysqli_stmt_get_result($stmt);
+
+if (!$resultado) {
+
+    error_log(
+        'Error al obtener perfil: ' .
+        mysqli_stmt_error($stmt)
+    );
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+
+    exit('No fue posible obtener el perfil.');
+}
+
+// Obtener los datos del usuario
+$usuario = mysqli_fetch_assoc($resultado);
+
+// Liberar los resultados y cerrar la consulta
+mysqli_free_result($resultado);
+
+mysqli_stmt_close($stmt);
 
 // Comprobar que la cuenta siga activa
 if (!$usuario) {
 
     finalizarSesion('Login/login.php', 'usuario_inactivo');
+
     exit;
 }
 
 // Obtener las iniciales del usuario
-$palabras = explode(' ', trim($usuario['nombre_completo']));
+$palabras = explode(
+    ' ',
+    trim($usuario['nombre_completo'])
+);
 
-$iniciales = mb_strtoupper(mb_substr($palabras[0], 0, 1));
+$iniciales = mb_strtoupper(
+    mb_substr($palabras[0], 0, 1)
+);
 
 if (count($palabras) > 1) {
 
-    $iniciales .= mb_strtoupper(mb_substr($palabras[1], 0, 1));
+    $iniciales .= mb_strtoupper(
+        mb_substr($palabras[1], 0, 1)
+    );
 }
 
 // Opciones del menú

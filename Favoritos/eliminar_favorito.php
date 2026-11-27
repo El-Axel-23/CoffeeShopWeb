@@ -5,6 +5,7 @@ require_once __DIR__ . '/../Login/sesion.php';
 
 verificarSesion('../Login/login.php');
 
+// Importar la conexión
 require_once __DIR__ . '/../config/conexion.php';
 
 // Comprobar el método de envío
@@ -48,18 +49,42 @@ try {
             WHERE id_usuario = ?
             AND id_producto = ?";
 
-    $stmt = $pdo->prepare($sql);
+    // Preparar la consulta
+    $stmt = mysqli_prepare($conexion, $sql);
 
-    $stmt->execute([
+    if (!$stmt) {
+
+        throw new RuntimeException(mysqli_error($conexion));
+    }
+
+    // Asignar los parámetros
+    mysqli_stmt_bind_param(
+        $stmt,
+        "ii",
         $idUsuario,
         $idProducto
-    ]);
+    );
+
+    // Ejecutar la consulta
+    if (!mysqli_stmt_execute($stmt)) {
+
+        $error = mysqli_stmt_error($stmt);
+
+        mysqli_stmt_close($stmt);
+
+        throw new RuntimeException($error);
+    }
+
+    // Cerrar la consulta
+    mysqli_stmt_close($stmt);
 
     $_SESSION['estado_favoritos'] = 'eliminado';
 
-} catch (PDOException $e) {
+} catch (RuntimeException $e) {
 
-    error_log('Error al eliminar favorito: ' . $e->getMessage());
+    error_log(
+        'Error al eliminar favorito: ' . $e->getMessage()
+    );
 
     $_SESSION['estado_favoritos'] = 'error';
 }

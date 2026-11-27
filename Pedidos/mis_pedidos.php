@@ -7,9 +7,10 @@ verificarSesion('../Login/login.php');
 
 header('Cache-Control: no-store');
 
+// Importar la conexión
 require_once __DIR__ . '/../config/conexion.php';
 
-$idUsuario = $_SESSION['id_usuario'];
+$idUsuario = (int) $_SESSION['id_usuario'];
 
 // Consultar los pedidos del usuario
 $sql = "SELECT id_pedido,
@@ -20,10 +21,53 @@ $sql = "SELECT id_pedido,
         WHERE id_usuario = ?
         ORDER BY fecha DESC, id_pedido DESC";
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$idUsuario]);
+// Preparar la consulta
+$stmt = mysqli_prepare($conexion, $sql);
 
-$pedidos = $stmt->fetchAll();
+if (!$stmt) {
+
+    error_log('Error al preparar pedidos: ' . mysqli_error($conexion));
+
+    http_response_code(500);
+    exit('No fue posible consultar los pedidos.');
+}
+
+// Asignar el ID del usuario y ejecutar
+if (!mysqli_stmt_bind_param($stmt, "i", $idUsuario) ||
+    !mysqli_stmt_execute($stmt)) {
+
+    error_log('Error al consultar pedidos: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible consultar los pedidos.');
+}
+
+// Obtener los resultados
+$resultadoPedidos = mysqli_stmt_get_result($stmt);
+
+if (!$resultadoPedidos) {
+
+    error_log('Error al obtener pedidos: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible obtener los pedidos.');
+}
+
+$pedidos = [];
+
+// Guardar los pedidos del usuario
+while ($pedido = mysqli_fetch_assoc($resultadoPedidos)) {
+
+    $pedidos[] = $pedido;
+}
+
+mysqli_free_result($resultadoPedidos);
+
+mysqli_stmt_close($stmt);
 
 // Consultar los productos de los pedidos
 $sql = "SELECT d.id_pedido,
@@ -35,10 +79,53 @@ $sql = "SELECT d.id_pedido,
         WHERE p.id_usuario = ?
         ORDER BY d.id_detalle";
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$idUsuario]);
+// Preparar la consulta
+$stmt = mysqli_prepare($conexion, $sql);
 
-$detalles = $stmt->fetchAll();
+if (!$stmt) {
+
+    error_log('Error al preparar detalles: ' . mysqli_error($conexion));
+
+    http_response_code(500);
+    exit('No fue posible consultar los detalles.');
+}
+
+// Asignar el ID del usuario
+if (!mysqli_stmt_bind_param($stmt, "i", $idUsuario) ||
+    !mysqli_stmt_execute($stmt)) {
+
+    error_log('Error al consultar detalles: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible consultar los detalles.');
+}
+
+// Obtener los resultados
+$resultadoDetalles = mysqli_stmt_get_result($stmt);
+
+if (!$resultadoDetalles) {
+
+    error_log('Error al obtener detalles: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible obtener los detalles.');
+}
+
+$detalles = [];
+
+// Guardar los productos comprados
+while ($detalle = mysqli_fetch_assoc($resultadoDetalles)) {
+
+    $detalles[] = $detalle;
+}
+
+mysqli_free_result($resultadoDetalles);
+
+mysqli_stmt_close($stmt);
 
 // Agrupar los productos por pedido
 $productosPedido = [];
@@ -57,10 +144,49 @@ $sql = "SELECT COALESCE(SUM(cantidad), 0)
         FROM carrito_items
         WHERE id_usuario = ?";
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$idUsuario]);
+// Preparar la consulta
+$stmt = mysqli_prepare($conexion, $sql);
 
-$cantidadCarrito = (int) $stmt->fetchColumn();
+if (!$stmt) {
+
+    error_log('Error al preparar carrito: ' . mysqli_error($conexion));
+
+    http_response_code(500);
+    exit('No fue posible consultar el carrito.');
+}
+
+// Asignar el ID del usuario
+if (!mysqli_stmt_bind_param($stmt, "i", $idUsuario) ||
+    !mysqli_stmt_execute($stmt)) {
+
+    error_log('Error al consultar carrito: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible consultar el carrito.');
+}
+
+// Obtener la cantidad del carrito
+$cantidadCarrito = 0;
+
+if (!mysqli_stmt_bind_result($stmt, $cantidadCarrito) ||
+    mysqli_stmt_fetch($stmt) !== true) {
+
+    error_log(
+        'Error al obtener cantidad del carrito: ' .
+        mysqli_stmt_error($stmt)
+    );
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible obtener la cantidad del carrito.');
+}
+
+$cantidadCarrito = (int) $cantidadCarrito;
+
+mysqli_stmt_close($stmt);
 
 // Obtener las iniciales del usuario
 $palabras = explode(

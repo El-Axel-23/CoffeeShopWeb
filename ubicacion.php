@@ -2,16 +2,33 @@
 
 session_start();
 
+// Conexión a la base de datos
 require_once __DIR__ . '/config/conexion.php';
 
-// Datos de la cafetería (solo hay un registro)
+// Consultar los datos de la cafetería
+$sql = "SELECT * FROM cafeteria_info
+        ORDER BY id_cafeteria LIMIT 1";
 
-$resCafe = $pdo->query(
-    "SELECT * FROM cafeteria_info
-     ORDER BY id_cafeteria LIMIT 1"
-);
+$resCafe = mysqli_query($conexion, $sql);
 
-$cafe = $resCafe->fetch();
+// Validar la consulta
+if (!$resCafe) {
+
+    error_log(
+        'Error al consultar ubicación: ' .
+        mysqli_error($conexion)
+    );
+
+    http_response_code(500);
+
+    exit('No fue posible consultar los datos de la cafetería.');
+}
+
+// Obtener los datos de la cafetería
+$cafe = mysqli_fetch_assoc($resCafe);
+
+// Liberar los resultados
+mysqli_free_result($resCafe);
 
 $titulo = 'Ubicación';
 
@@ -40,18 +57,17 @@ include __DIR__ . '/includes/header.php';
 
     <?php
 
-    // Si hay coordenadas, armamos el mapa y la ruta
-
+    // Comprobar si existen las coordenadas
     $tieneMapa = ($cafe['latitud'] !== null
                && $cafe['longitud'] !== null);
 
     if ($tieneMapa) {
 
         $lat = (float) $cafe['latitud'];
+
         $lon = (float) $cafe['longitud'];
 
-        // Mapa de OpenStreetMap (no necesita clave)
-
+        // Generar el mapa de OpenStreetMap
         $bbox = ($lon - 0.005) . ','
               . ($lat - 0.003) . ','
               . ($lon + 0.005) . ','
@@ -60,11 +76,13 @@ include __DIR__ . '/includes/header.php';
         $urlMapa = 'https://www.openstreetmap.org/export/embed.html?bbox='
                    . $bbox . '&layer=mapnik&marker=' . $lat . ',' . $lon;
 
+        // Generar la ruta de Google Maps
         $urlRuta = 'https://www.google.com/maps/dir/?api=1&destination='
                    . urlencode($lat . ',' . $lon);
 
     } else {
 
+        // Buscar la ubicación mediante la dirección
         $urlRuta = 'https://www.google.com/maps/search/?api=1&query='
                    . urlencode($cafe['direccion']);
     }
@@ -87,26 +105,34 @@ include __DIR__ . '/includes/header.php';
             <?php else: ?>
 
                 <div class="h-full min-h-64 flex items-center justify-center text-5xl">
+
                     📍
+
                 </div>
 
             <?php endif; ?>
 
         </div>
 
-        <!-- Datos -->
+        <!-- Datos de la cafetería -->
 
         <div class="grid gap-4 content-start">
 
             <h2 class="text-xl font-bold">
+
                 <?= htmlspecialchars($cafe['nombre']) ?>
+
             </h2>
 
             <p class="flex gap-3 text-sm">
 
                 <span>📍</span>
 
-                <span><?= htmlspecialchars($cafe['direccion']) ?></span>
+                <span>
+
+                    <?= htmlspecialchars($cafe['direccion']) ?>
+
+                </span>
 
             </p>
 

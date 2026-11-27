@@ -18,6 +18,8 @@ $token = '';
 $mostrarFormulario = false;
 $mostrarSolicitar = false;
 
+$transaccionActiva = false;
+
 // Recibir el token de recuperación
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
@@ -46,6 +48,7 @@ if (!is_string($token) ||
 
 } else {
 
+    // Importar la conexión
     require_once __DIR__ . '/../config/conexion.php';
 
     // Obtener el hash del token recibido
@@ -65,11 +68,43 @@ if (!is_string($token) ||
                 AND u.proveedor = 'local'
                 LIMIT 1";
 
-        $stmt = $pdo->prepare($sql);
+        $stmt = mysqli_prepare($conexion, $sql);
 
-        $stmt->execute([$tokenHash]);
+        if (!$stmt) {
 
-        $recuperacion = $stmt->fetch();
+            throw new RuntimeException(
+                mysqli_error($conexion)
+            );
+        }
+
+        // Asignar el token y ejecutar la consulta
+        if (!mysqli_stmt_bind_param($stmt, "s", $tokenHash) ||
+            !mysqli_stmt_execute($stmt)) {
+
+            $mensajeError = mysqli_stmt_error($stmt);
+
+            mysqli_stmt_close($stmt);
+
+            throw new RuntimeException($mensajeError);
+        }
+
+        // Obtener los datos de recuperación
+        $resultado = mysqli_stmt_get_result($stmt);
+
+        if (!$resultado) {
+
+            $mensajeError = mysqli_stmt_error($stmt);
+
+            mysqli_stmt_close($stmt);
+
+            throw new RuntimeException($mensajeError);
+        }
+
+        $recuperacion = mysqli_fetch_assoc($resultado);
+
+        mysqli_free_result($resultado);
+
+        mysqli_stmt_close($stmt);
 
         // Comprobar si el enlace es válido
         if (!$recuperacion) {
@@ -81,6 +116,10 @@ if (!is_string($token) ||
         } else {
 
             $mostrarFormulario = true;
+
+            $idRecuperacion = (int) $recuperacion['id'];
+
+            $idUsuario = (int) $recuperacion['id_usuario'];
 
             // Recibir las nuevas contraseñas
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -149,7 +188,14 @@ if (!is_string($token) ||
                     );
 
                     // Iniciar transacción
-                    $pdo->beginTransaction();
+                    if (!mysqli_begin_transaction($conexion)) {
+
+                        throw new RuntimeException(
+                            mysqli_error($conexion)
+                        );
+                    }
+
+                    $transaccionActiva = true;
 
                     // Comprobar y bloquear al usuario
                     $sqlUsuario = "SELECT id_usuario
@@ -159,15 +205,38 @@ if (!is_string($token) ||
                                    AND proveedor = 'local'
                                    FOR UPDATE";
 
-                    $stmtUsuario = $pdo->prepare($sqlUsuario);
+                    $stmtUsuario = mysqli_prepare(
+                        $conexion,
+                        $sqlUsuario
+                    );
 
-                    $stmtUsuario->execute([
-                        $recuperacion['id_usuario']
-                    ]);
+                    if (!$stmtUsuario) {
 
-                    $usuario = $stmtUsuario->fetch();
+                        throw new RuntimeException(
+                            mysqli_error($conexion)
+                        );
+                    }
 
-                    $stmtUsuario->closeCursor();
+                    // Asignar el ID del usuario
+                    if (!mysqli_stmt_bind_param(
+                            $stmtUsuario,
+                            "i",
+                            $idUsuario
+                        ) ||
+                        !mysqli_stmt_execute($stmtUsuario) ||
+                        !mysqli_stmt_store_result($stmtUsuario)) {
+
+                        $mensajeError = mysqli_stmt_error($stmtUsuario);
+
+                        mysqli_stmt_close($stmtUsuario);
+
+                        throw new RuntimeException($mensajeError);
+                    }
+
+                    // Comprobar si el usuario existe
+                    $usuario = mysqli_stmt_num_rows($stmtUsuario) > 0;
+
+                    mysqli_stmt_close($stmtUsuario);
 
                     // Verificar nuevamente el token
                     $sqlToken = "SELECT id
@@ -179,21 +248,52 @@ if (!is_string($token) ||
                                  AND expira > NOW()
                                  FOR UPDATE";
 
-                    $stmtToken = $pdo->prepare($sqlToken);
+                    $stmtToken = mysqli_prepare(
+                        $conexion,
+                        $sqlToken
+                    );
 
-                    $stmtToken->execute([
-                        $recuperacion['id'],
-                        $recuperacion['id_usuario'],
-                        $tokenHash
-                    ]);
+                    if (!$stmtToken) {
 
-                    $tokenValido = $stmtToken->fetch();
+                        throw new RuntimeException(
+                            mysqli_error($conexion)
+                        );
+                    }
 
-                    $stmtToken->closeCursor();
+                    // Asignar los parámetros del token
+                    if (!mysqli_stmt_bind_param(
+                            $stmtToken,
+                            "iis",
+                            $idRecuperacion,
+                            $idUsuario,
+                            $tokenHash
+                        ) ||
+                        !mysqli_stmt_execute($stmtToken) ||
+                        !mysqli_stmt_store_result($stmtToken)) {
+
+                        $mensajeError = mysqli_stmt_error($stmtToken);
+
+                        mysqli_stmt_close($stmtToken);
+
+                        throw new RuntimeException($mensajeError);
+                    }
+
+                    // Comprobar si el token sigue siendo válido
+                    $tokenValido = mysqli_stmt_num_rows($stmtToken) > 0;
+
+                    mysqli_stmt_close($stmtToken);
 
                     if (!$usuario || !$tokenValido) {
 
-                        $pdo->rollBack();
+                        // Cancelar la transacción
+                        if (!mysqli_rollback($conexion)) {
+
+                            throw new RuntimeException(
+                                mysqli_error($conexion)
+                            );
+                        }
+
+                        $transaccionActiva = false;
 
                         $error = 'El enlace de recuperación ya no es válido.';
 
@@ -208,14 +308,37 @@ if (!is_string($token) ||
                                           SET contrasena_hash = ?
                                           WHERE id_usuario = ?";
 
-                        $stmtActualizar = $pdo->prepare(
+                        $stmtActualizar = mysqli_prepare(
+                            $conexion,
                             $sqlActualizar
                         );
 
-                        $stmtActualizar->execute([
-                            $contrasenaHash,
-                            $recuperacion['id_usuario']
-                        ]);
+                        if (!$stmtActualizar) {
+
+                            throw new RuntimeException(
+                                mysqli_error($conexion)
+                            );
+                        }
+
+                        // Asignar la contraseña y el ID
+                        if (!mysqli_stmt_bind_param(
+                                $stmtActualizar,
+                                "si",
+                                $contrasenaHash,
+                                $idUsuario
+                            ) ||
+                            !mysqli_stmt_execute($stmtActualizar)) {
+
+                            $mensajeError = mysqli_stmt_error(
+                                $stmtActualizar
+                            );
+
+                            mysqli_stmt_close($stmtActualizar);
+
+                            throw new RuntimeException($mensajeError);
+                        }
+
+                        mysqli_stmt_close($stmtActualizar);
 
                         // Invalidar los enlaces de recuperación
                         $sqlInvalidar = "UPDATE recuperacion_contrasena
@@ -223,16 +346,46 @@ if (!is_string($token) ||
                                          WHERE id_usuario = ?
                                          AND usado = 0";
 
-                        $stmtInvalidar = $pdo->prepare(
+                        $stmtInvalidar = mysqli_prepare(
+                            $conexion,
                             $sqlInvalidar
                         );
 
-                        $stmtInvalidar->execute([
-                            $recuperacion['id_usuario']
-                        ]);
+                        if (!$stmtInvalidar) {
+
+                            throw new RuntimeException(
+                                mysqli_error($conexion)
+                            );
+                        }
+
+                        // Ejecutar la consulta
+                        if (!mysqli_stmt_bind_param(
+                                $stmtInvalidar,
+                                "i",
+                                $idUsuario
+                            ) ||
+                            !mysqli_stmt_execute($stmtInvalidar)) {
+
+                            $mensajeError = mysqli_stmt_error(
+                                $stmtInvalidar
+                            );
+
+                            mysqli_stmt_close($stmtInvalidar);
+
+                            throw new RuntimeException($mensajeError);
+                        }
+
+                        mysqli_stmt_close($stmtInvalidar);
 
                         // Confirmar los cambios
-                        $pdo->commit();
+                        if (!mysqli_commit($conexion)) {
+
+                            throw new RuntimeException(
+                                mysqli_error($conexion)
+                            );
+                        }
+
+                        $transaccionActiva = false;
 
                         // Renovar token de seguridad
                         $_SESSION['csrf_restablecer'] =
@@ -248,12 +401,12 @@ if (!is_string($token) ||
             }
         }
 
-    } catch (PDOException $e) {
+    } catch (RuntimeException $e) {
 
         // Cancelar cambios si ocurre un error
-        if ($pdo->inTransaction()) {
+        if ($transaccionActiva) {
 
-            $pdo->rollBack();
+            mysqli_rollback($conexion);
         }
 
         error_log(
@@ -269,6 +422,13 @@ if (!is_string($token) ||
 $html = file_get_contents(
     __DIR__ . '/restablecer.html'
 );
+
+if ($html === false || trim($html) === '') {
+
+    http_response_code(500);
+
+    exit('No fue posible cargar la vista para restablecer la contraseña.');
+}
 
 // Mostrar u ocultar mensajes
 $claseError = 'd-none';

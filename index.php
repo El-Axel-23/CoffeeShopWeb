@@ -32,6 +32,51 @@ include __DIR__ . '/includes/header.php';
 
 ?>
 
+<style>
+/* Inicio: aprovechar todo el ancho disponible */
+main:has(#catalogo) {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 1.75rem clamp(1rem, 3vw, 3rem) 2.5rem;
+}
+
+main:has(#catalogo) #form-buscar { max-width: 42rem; }
+main:has(#catalogo) #catalogo { width: 100%; }
+main:has(#catalogo) #catalogo > h2 { margin-bottom: 1rem; }
+main:has(#catalogo) #catalogo > div.grid { width: 100%; }
+main:has(#catalogo) #catalogo > div.grid.grid-cols-1.md\:grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+main:has(#catalogo) #catalogo > div.grid.grid-cols-2.md\:grid-cols-3.lg\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 640px) {
+    main:has(#catalogo) #catalogo > div.grid.grid-cols-2.md\:grid-cols-3.lg\:grid-cols-4 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+@media (min-width: 1024px) {
+    main:has(#catalogo) #catalogo > div.grid.grid-cols-2.md\:grid-cols-3.lg\:grid-cols-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+@media (min-width: 1440px) {
+    main:has(#catalogo) #catalogo > div.grid.grid-cols-2.md\:grid-cols-3.lg\:grid-cols-4 {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+@media (max-width: 767px) {
+    main:has(#catalogo) #catalogo > div.grid.grid-cols-1.md\:grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+    main:has(#catalogo) #catalogo > div.grid.grid-cols-2.md\:grid-cols-3.lg\:grid-cols-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+</style>
+
 <!-- Título principal -->
 <h1 class="text-2xl font-bold mb-5">
     Inicio

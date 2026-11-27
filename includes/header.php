@@ -54,9 +54,7 @@ if ($paginaActual === 'index.php' && $base === '') {
 
     $claseFavoritos = $claseActiva;
 
-} elseif ($paginaActual === 'mis_pedidos.php' ||
-          $paginaActual === 'detalle_pedido.php') {
-
+} elseif ($paginaActual === 'mis_pedidos.php' || $paginaActual === 'detalle_pedido.php') {
     $clasePedidos = $claseActiva;
 }
 
@@ -69,17 +67,12 @@ if ($paginaActual === 'index.php' && $base === '') {
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <title><?= htmlspecialchars($titulo) ?></title>
 
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Iconos -->
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <!-- Colores de Coffee Shop -->
     <script>
         tailwind.config = {
             theme: {
@@ -102,156 +95,61 @@ if ($paginaActual === 'index.php' && $base === '') {
             }
         }
     </script>
-
 </head>
-
 <body class="bg-fondo text-moka min-h-screen font-sans">
-
 <div class="min-h-screen flex flex-col">
-
-    <!-- Barra de navegación -->
-    <nav class="bg-white border-b border-borde">
-
-        <div class="max-w-6xl mx-auto px-4 md:px-6 py-4
-                    flex flex-wrap items-center gap-6">
-
-            <!-- Logotipo -->
-            <a href="<?= $base ?>index.php"
-               class="flex items-center gap-3 whitespace-nowrap">
-
+    <nav class="bg-white border-b border-borde sticky top-0 z-50 shadow-sm">
+        <div class="w-full px-4 md:px-6 xl:px-10 py-3
+                    flex flex-wrap xl:flex-nowrap items-center justify-between gap-4">
+            <a href="<?= $base ?>index.php"class="flex items-center gap-3 whitespace-nowrap">
                 <i class="bi bi-cup-hot text-2xl"></i>
-
                 <span class="text-sm">
                     COFFEE SHOP
                 </span>
-
             </a>
-
-            <!-- Enlaces de navegación -->
-            <div class="flex flex-wrap items-center gap-5
-                        text-xs font-semibold flex-1">
-
-                <a href="<?= $base ?>index.php"
-                   class="hover:text-cafe <?= $claseInicio ?>">
-
+            <div class="flex flex-wrap xl:flex-nowrap items-center justify-center gap-3 md:gap-5
+                        text-xs font-semibold flex-1 min-w-0">
+                <a href="<?= $base ?>index.php" class="hover:text-cafe <?= $claseInicio ?>">
                     Inicio
-
                 </a>
-
-                <a href="<?= $base ?>index.php#menu"
-                   class="hover:text-cafe">
-
+                <a href="<?= $base ?>index.php#menu" class="hover:text-cafe">
                     Menú
-
                 </a>
-
-                <a href="<?= $base ?>Favoritos/favoritos.php"
-                   class="hover:text-cafe <?= $claseFavoritos ?>">
-
+                <a href="<?= $base ?>Favoritos/favoritos.php" class="hover:text-cafe <?= $claseFavoritos ?>">
                     Favoritos
-
                 </a>
-
-                <a href="<?= $base ?>Pedidos/mis_pedidos.php"
-                   class="hover:text-cafe <?= $clasePedidos ?>">
-
+                <a href="<?= $base ?>Pedidos/mis_pedidos.php" class="hover:text-cafe <?= $clasePedidos ?>">
                     Mis pedidos
-
                 </a>
-
-                <a href="<?= $base ?>ubicacion.php"
-                   class="hover:text-cafe <?= $claseUbicacion ?>">
-
+                <a href="<?= $base ?>ubicacion.php" class="hover:text-cafe <?= $claseUbicacion ?>">
                     Ubicación
-
                 </a>
-
-                <a href="<?= $base ?>ayuda.php"
-                   class="hover:text-cafe <?= $claseAyuda ?>">
-
+                <a href="<?= $base ?>ayuda.php" class="hover:text-cafe <?= $claseAyuda ?>">
                     Ayuda
-
                 </a>
-
-                <a href="#"
-                   class="hover:text-cafe">
-
-                    Carrito (0)
-
-                </a>
-
+                <a href="#" class="hover:text-cafe"> Carrito (0)</a>
             </div>
-
-            <!-- Cuenta del usuario -->
-            <div class="flex items-center gap-5">
-
-                <!-- Notificaciones -->
+            <div class="flex items-center gap-3 md:gap-5 shrink-0">
                 <span title="Notificaciones">
-
                     <i class="bi bi-bell text-lg"></i>
-
                 </span>
-
                 <?php if ($esAdmin): ?>
-
-                    <a href="<?= $base ?>admin/index.php"
-                       class="bg-cafe hover:bg-cafeHover text-white
-                              rounded-lg px-3 py-2 text-xs font-semibold">
-
-                        Administrar productos
-
+                    <a href="<?= $base ?>admin/index.php" class="bg-cafe hover:bg-cafeHover text-white rounded-lg px-3 py-2 text-xs font-semibold">
                     </a>
-
                 <?php endif; ?>
-
                 <?php if ($logueado): ?>
-
-                    <!-- Perfil del usuario -->
-                    <a href="<?= $base ?>perfil.php"
-                       title="Mi perfil"
-                       class="w-9 h-9 rounded-full bg-crema
-                              flex items-center justify-center
-                              text-xs font-bold hover:bg-borde">
-
+                    <a href="<?= $base ?>perfil.php" title="Mi perfil" class="w-9 h-9 rounded-full bg-crema flex items-center justify-center text-xs font-bold hover:bg-borde">
                         <?= htmlspecialchars($inicialesNav) ?>
-
                     </a>
-
-                    <!-- Cerrar sesión -->
-                    <form action="<?= $base ?>Login/logout.php"
-                          method="POST">
-
-                        <input type="hidden"
-                               name="csrf_token"
-                               value="<?= htmlspecialchars($_SESSION['csrf_logout']) ?>">
-
-                        <button type="submit"
-                                class="text-xs font-semibold hover:text-cafe">
-
-                            Salir
-
-                        </button>
-
+                    <form action="<?= $base ?>Login/logout.php"method="POST">
+                        <input type="hidden"name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_logout']) ?>">
+                        <button type="submit" class="text-xs font-semibold hover:text-cafe"> Salir </button>
                     </form>
-
                 <?php else: ?>
-
-                    <!-- Iniciar sesión -->
                     <a href="<?= $base ?>Login/login.php"
-                       class="bg-cafe hover:bg-cafeHover text-white
-                              rounded-lg px-4 py-2 text-xs font-semibold">
-
-                        Iniciar sesión
-
-                    </a>
-
+                    class="bg-cafe hover:bg-cafeHover text-white rounded-lg px-4 py-2 text-xs font-semibold">Iniciar sesión</a>
                 <?php endif; ?>
-
             </div>
-
         </div>
-
     </nav>
-
-    <!-- Contenido principal -->
     <main class="w-full max-w-6xl mx-auto flex-1 px-4 md:px-6 py-8">

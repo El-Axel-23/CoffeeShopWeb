@@ -2,21 +2,64 @@
 
 session_start();
 
+// Conexión a la base de datos
 require_once __DIR__ . '/config/conexion.php';
 
-$resPreguntas = $pdo->query(
-    "SELECT pregunta, respuesta
-     FROM preguntas_frecuentes
-     ORDER BY orden"
-)->fetchAll();
+// Consultar las preguntas frecuentes
+$sqlPreguntas = "SELECT pregunta, respuesta
+                 FROM preguntas_frecuentes
+                 ORDER BY orden";
 
-$resCafe = $pdo->query(
-    "SELECT telefono, correo
-     FROM cafeteria_info
-     ORDER BY id_cafeteria LIMIT 1"
+$resultadoPreguntas = mysqli_query(
+    $conexion,
+    $sqlPreguntas
 );
 
-$cafe = $resCafe->fetch();
+// Validar la consulta
+if (!$resultadoPreguntas) {
+
+    error_log(
+        'Error al consultar preguntas: ' .
+        mysqli_error($conexion)
+    );
+
+    http_response_code(500);
+    exit('No fue posible consultar las preguntas frecuentes.');
+}
+
+$resPreguntas = [];
+
+// Obtener las preguntas frecuentes
+while ($pregunta = mysqli_fetch_assoc($resultadoPreguntas)) {
+
+    $resPreguntas[] = $pregunta;
+}
+
+mysqli_free_result($resultadoPreguntas);
+
+// Consultar la información de contacto
+$sqlCafe = "SELECT telefono, correo
+            FROM cafeteria_info
+            ORDER BY id_cafeteria LIMIT 1";
+
+$resCafe = mysqli_query($conexion, $sqlCafe);
+
+// Validar la consulta
+if (!$resCafe) {
+
+    error_log(
+        'Error al consultar la cafetería: ' .
+        mysqli_error($conexion)
+    );
+
+    http_response_code(500);
+    exit('No fue posible consultar la información de contacto.');
+}
+
+// Obtener los datos de la cafetería
+$cafe = mysqli_fetch_assoc($resCafe);
+
+mysqli_free_result($resCafe);
 
 $titulo = 'Ayuda';
 
@@ -37,7 +80,7 @@ include __DIR__ . '/includes/header.php';
 
     </div>
 
-    <!-- Preguntas frecuentes: se abren y cierran con un clic (sin JavaScript) -->
+    <!-- Preguntas frecuentes -->
 
     <div class="grid gap-3">
 
@@ -48,11 +91,15 @@ include __DIR__ . '/includes/header.php';
                 <details class="bg-durazno rounded-2xl p-4">
 
                     <summary class="cursor-pointer text-sm font-semibold">
+
                         <?= htmlspecialchars($p['pregunta']) ?>
+
                     </summary>
 
                     <p class="mt-3 text-sm">
+
                         <?= htmlspecialchars($p['respuesta']) ?>
+
                     </p>
 
                 </details>
@@ -62,7 +109,9 @@ include __DIR__ . '/includes/header.php';
         <?php else: ?>
 
             <p class="text-sm">
+
                 Todavía no hay preguntas frecuentes.
+
             </p>
 
         <?php endif; ?>
@@ -76,7 +125,9 @@ include __DIR__ . '/includes/header.php';
         <div class="bg-durazno rounded-2xl p-4 mt-5 grid gap-3">
 
             <h2 class="text-base font-bold">
+
                 ¿Necesitas ayuda?
+
             </h2>
 
             <?php if ($cafe['telefono']): ?>

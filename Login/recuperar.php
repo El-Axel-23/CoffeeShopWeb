@@ -66,14 +66,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         AND proveedor = 'local'
                         LIMIT 1";
 
-                $stmt = $pdo->prepare($sql);
+                $stmt = mysqli_prepare($conexion, $sql);
 
-                $stmt->execute([$correo]);
+                if (!$stmt) {
 
-                $usuario = $stmt->fetch();
+                    throw new RuntimeException(
+                        mysqli_error($conexion)
+                    );
+                }
+
+                // Asignar el correo y ejecutar la consulta
+                if (!mysqli_stmt_bind_param($stmt, "s", $correo) ||
+                    !mysqli_stmt_execute($stmt)) {
+
+                    $mensajeError = mysqli_stmt_error($stmt);
+
+                    mysqli_stmt_close($stmt);
+
+                    throw new RuntimeException($mensajeError);
+                }
+
+                // Obtener los datos del usuario
+                $resultado = mysqli_stmt_get_result($stmt);
+
+                if (!$resultado) {
+
+                    $mensajeError = mysqli_stmt_error($stmt);
+
+                    mysqli_stmt_close($stmt);
+
+                    throw new RuntimeException($mensajeError);
+                }
+
+                $usuario = mysqli_fetch_assoc($resultado);
+
+                mysqli_free_result($resultado);
+
+                mysqli_stmt_close($stmt);
 
                 // Comprobar si existe el usuario
                 if ($usuario) {
+
+                    $idUsuario = (int) $usuario['id_usuario'];
 
                     // Evitar solicitudes demasiado frecuentes
                     $sql = "SELECT id
@@ -84,11 +118,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             )
                             LIMIT 1";
 
-                    $stmt = $pdo->prepare($sql);
+                    $stmt = mysqli_prepare($conexion, $sql);
 
-                    $stmt->execute([$usuario['id_usuario']]);
+                    if (!$stmt) {
 
-                    $solicitudReciente = $stmt->fetch();
+                        throw new RuntimeException(
+                            mysqli_error($conexion)
+                        );
+                    }
+
+                    if (!mysqli_stmt_bind_param(
+                            $stmt,
+                            "i",
+                            $idUsuario
+                        ) ||
+                        !mysqli_stmt_execute($stmt) ||
+                        !mysqli_stmt_store_result($stmt)) {
+
+                        $mensajeError = mysqli_stmt_error($stmt);
+
+                        mysqli_stmt_close($stmt);
+
+                        throw new RuntimeException($mensajeError);
+                    }
+
+                    // Comprobar si existe una solicitud reciente
+                    $solicitudReciente =
+                        mysqli_stmt_num_rows($stmt) > 0;
+
+                    mysqli_stmt_close($stmt);
 
                     if (!$solicitudReciente) {
 
@@ -96,7 +154,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $tokenRecuperacion = bin2hex(random_bytes(32));
 
                         // Guardar el token de forma segura
-                        $tokenHash = hash('sha256', $tokenRecuperacion);
+                        $tokenHash = hash(
+                            'sha256',
+                            $tokenRecuperacion
+                        );
 
                         // Registrar la solicitud
                         $sql = "INSERT INTO recuperacion_contrasena
@@ -107,12 +168,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     0
                                 )";
 
-                        $stmt = $pdo->prepare($sql);
+                        $stmt = mysqli_prepare($conexion, $sql);
 
-                        $stmt->execute([
-                            $usuario['id_usuario'],
-                            $tokenHash
-                        ]);
+                        if (!$stmt) {
+
+                            throw new RuntimeException(
+                                mysqli_error($conexion)
+                            );
+                        }
+
+                        // Asignar los parámetros
+                        if (!mysqli_stmt_bind_param(
+                                $stmt,
+                                "is",
+                                $idUsuario,
+                                $tokenHash
+                            ) ||
+                            !mysqli_stmt_execute($stmt)) {
+
+                            $mensajeError = mysqli_stmt_error($stmt);
+
+                            mysqli_stmt_close($stmt);
+
+                            throw new RuntimeException($mensajeError);
+                        }
+
+                        mysqli_stmt_close($stmt);
 
                         // Crear enlace de recuperación
                         $enlace = 'https://madison.4buthh.com/coffeshopweb1/CoffeeShopWeb/Login/restablecer.php?token='
@@ -144,7 +225,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         $enviado = false;
 
-                        if (filter_var($remitente, FILTER_VALIDATE_EMAIL)) {
+                        if (filter_var(
+                            $remitente,
+                            FILTER_VALIDATE_EMAIL
+                        )) {
 
                             $cabeceras = "From: Coffee Shop <"
                                          . $remitente . ">\r\n";
@@ -169,14 +253,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     WHERE id_usuario = ?
                                     AND token = ?";
 
-                            $stmt = $pdo->prepare($sql);
+                            $stmt = mysqli_prepare($conexion, $sql);
 
-                            $stmt->execute([
-                                $usuario['id_usuario'],
-                                $tokenHash
-                            ]);
+                            if (!$stmt) {
 
-                            error_log('No se pudo enviar el correo de recuperación.');
+                                throw new RuntimeException(
+                                    mysqli_error($conexion)
+                                );
+                            }
+
+                            if (!mysqli_stmt_bind_param(
+                                    $stmt,
+                                    "is",
+                                    $idUsuario,
+                                    $tokenHash
+                                ) ||
+                                !mysqli_stmt_execute($stmt)) {
+
+                                $mensajeError = mysqli_stmt_error($stmt);
+
+                                mysqli_stmt_close($stmt);
+
+                                throw new RuntimeException($mensajeError);
+                            }
+
+                            mysqli_stmt_close($stmt);
+
+                            error_log(
+                                'No se pudo enviar el correo de recuperación.'
+                            );
                         }
                     }
                 }
@@ -184,7 +289,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Mostrar el mismo mensaje para proteger las cuentas
                 $exito = 'Si el correo está asociado a una cuenta, recibirás un enlace para recuperar tu contraseña.';
 
-            } catch (PDOException $e) {
+            } catch (RuntimeException $e) {
 
                 error_log(
                     'Error de recuperación: ' . $e->getMessage()
@@ -198,6 +303,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Cargar la vista HTML
 $html = file_get_contents(__DIR__ . '/recuperar.html');
+
+if ($html === false || trim($html) === '') {
+
+    http_response_code(500);
+
+    exit('No fue posible cargar la vista de recuperación.');
+}
 
 // Mostrar u ocultar los mensajes
 $claseError = 'd-none';

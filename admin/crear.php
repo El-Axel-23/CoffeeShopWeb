@@ -1,9 +1,15 @@
 <?php
+
 // Importar el control de sesiones
 require_once __DIR__ . '/../Login/sesion.php';
+
 // Comprobar que el usuario sea administrador
 verificarSesion('../Login/login.php', 'admin');
+
+// Importar la conexión
 require_once __DIR__ . '/../config/conexion.php';
+
+// Generar token de seguridad
 if (!isset($_SESSION['csrf_admin'])) {
     $_SESSION['csrf_admin'] = bin2hex(random_bytes(32));
 }
@@ -17,14 +23,35 @@ $destacado = 0;
 $disponible = 1;
 $ext = '';
 
-$resCategorias = $pdo->query(
-    "SELECT * FROM categorias ORDER BY orden"
-)->fetchAll();
+// Obtener las categorías
+$sqlCategorias = "SELECT * FROM categorias ORDER BY orden";
 
+$resultadoCategorias = mysqli_query($conexion, $sqlCategorias);
+
+if (!$resultadoCategorias) {
+
+    error_log("Error al consultar categorías: " . mysqli_error($conexion));
+
+    http_response_code(500);
+
+    exit("No fue posible obtener las categorías.");
+}
+
+$resCategorias = [];
+
+while ($categoria = mysqli_fetch_assoc($resultadoCategorias)) {
+
+    $resCategorias[] = $categoria;
+}
+
+mysqli_free_result($resultadoCategorias);
+
+// Procesar el formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $token = $_POST['csrf_token'] ?? '';
 
+    // Validar el token de seguridad
     if (!is_string($token) || !hash_equals($_SESSION['csrf_admin'], $token)) {
 
         http_response_code(403);
@@ -41,12 +68,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $precio = isset($_POST['precio']) && is_string($_POST['precio'])
         ? $_POST['precio'] : '';
 
-    $id_categoria = filter_input(INPUT_POST, 'id_categoria', FILTER_VALIDATE_INT);
+    $id_categoria = filter_input(
+        INPUT_POST,
+        'id_categoria',
+        FILTER_VALIDATE_INT
+    );
 
     $destacado = isset($_POST['destacado']) ? 1 : 0;
     $disponible = isset($_POST['disponible']) ? 1 : 0;
+
     $imagen = $_FILES['imagen'] ?? null;
 
+    // Validar los datos del producto
     if ($nombre == '') {
 
         $error = 'El nombre es obligatorio.';
@@ -77,78 +110,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } else {
 
+        // Validar el formato de la imagen
         $extPermitidas = ['jpg', 'jpeg', 'png', 'webp'];
 
-        $mimePermitidos = ['image/jpeg', 'image/png', 'image/webp'];
+        $mimePermitidos = [
+            'image/jpeg',
+            'image/png',
+            'image/webp'
+        ];
 
-        $ext = strtolower(pathinfo($imagen['name'], PATHINFO_EXTENSION));
+        $ext = strtolower(
+            pathinfo($imagen['name'], PATHINFO_EXTENSION)
+        );
 
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
 
-        $mimeReal = finfo_file($finfo, $imagen['tmp_name']);
+        if ($finfo === false) {
 
-        finfo_close($finfo);
+            $error = 'No fue posible comprobar el formato de la imagen.';
 
-        if (!in_array($ext, $extPermitidas, true) ||
-            !in_array($mimeReal, $mimePermitidos, true)) {
+        } else {
 
-            $error = 'Formato no válido. Solo se admiten archivos JPG, PNG y WEBP.';
+            $mimeReal = finfo_file($finfo, $imagen['tmp_name']);
+
+            finfo_close($finfo);
+
+            if (!in_array($ext, $extPermitidas, true) ||
+                !in_array($mimeReal, $mimePermitidos, true)) {
+
+                $error = 'Formato no válido. Solo se admiten archivos JPG, PNG y WEBP.';
+            }
         }
     }
 
+    // Guardar el producto si no existen errores
     if ($error == '') {
 
         $nombreUnico = uniqid('prod_', true) . '.' . $ext;
 
         $dirDestino = __DIR__ . '/../img/productos/';
 
+        // Crear la carpeta si no existe
         if (!is_dir($dirDestino)) {
 
             mkdir($dirDestino, 0755, true);
         }
 
-        if (move_uploaded_file($imagen['tmp_name'], $dirDestino . $nombreUnico)) {
+        // Guardar la imagen
+        if (move_uploaded_file(
+            $imagen['tmp_name'],
+            $dirDestino . $nombreUnico
+        )) {
 
             $rutaBD = 'img/productos/' . $nombreUnico;
 
-            try {
+            // Consulta para registrar el producto
+            $sql = "INSERT INTO productos (
+                        id_categoria,
+                        nombre,
+                        descripcion,
+                        precio,
+                        imagen_url,
+                        destacado,
+                        disponible
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-                $sql = "INSERT INTO productos (
-                            id_categoria,
-                            nombre,
-                            descripcion,
-                            precio,
-                            imagen_url,
-                            destacado,
-                            disponible
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            // Preparar la consulta
+            $stmt = mysqli_prepare($conexion, $sql);
 
-                $stmt = $pdo->prepare($sql);
+            if (!$stmt) {
 
-                $stmt->execute([
+                error_log(
+                    'Error al preparar la consulta: ' .
+                    mysqli_error($conexion)
+                );
+
+                $error = 'Error al preparar el registro del producto.';
+
+            } else {
+
+                // Convertir el precio a un valor decimal
+                $precioProducto = (float) $precio;
+
+                // Asignar los parámetros
+                $parametros = mysqli_stmt_bind_param(
+                    $stmt,
+                    "issdsii",
                     $id_categoria,
                     $nombre,
                     $descripcion,
-                    $precio,
+                    $precioProducto,
                     $rutaBD,
                     $destacado,
                     $disponible
-                ]);
+                );
 
-                header('Location: index.php?msg=creado', true, 303);
+                // Ejecutar la consulta
+                if ($parametros && mysqli_stmt_execute($stmt)) {
 
-                exit;
+                    mysqli_stmt_close($stmt);
 
-            } catch (PDOException $e) {
+                    header('Location: index.php?msg=creado', true, 303);
+
+                    exit;
+
+                } else {
+
+                    error_log(
+                        'Error al registrar producto: ' .
+                        mysqli_stmt_error($stmt)
+                    );
+
+                    $error = 'Error al registrar en la base de datos.';
+                }
+
+                mysqli_stmt_close($stmt);
+            }
+
+            // Eliminar la imagen si no se registró el producto
+            if ($error != '') {
 
                 if (is_file($dirDestino . $nombreUnico)) {
 
                     unlink($dirDestino . $nombreUnico);
                 }
-
-                error_log('Error al registrar producto: ' . $e->getMessage());
-
-                $error = 'Error al registrar en la base de datos.';
             }
 
         } else {
@@ -159,17 +244,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $base = '../';
+
 $titulo = 'Agregar producto';
+
 $inputClase = 'w-full bg-durazno border border-moka rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cafe';
+
 include __DIR__ . '/../includes/header.php';
+
 ?>
-<h1 class="text-xl font-bold mb-2">Agregar producto</h1>
-<a href="index.php" class="text-sm underline">← Ver listado</a>
+
+<h1 class="text-xl font-bold mb-2">
+    Agregar producto
+</h1>
+
+<a href="index.php" class="text-sm underline">
+    ← Ver listado
+</a>
+
 <?php if ($error != ''): ?>
+
     <p class="bg-red-100 border border-red-400 text-red-800 rounded-xl p-3 my-4 text-sm max-w-xl">
+
         <?= htmlspecialchars($error) ?>
+
     </p>
+
 <?php endif; ?>
+
 <form method="post"
       enctype="multipart/form-data"
       class="grid gap-4 max-w-xl mt-4">
@@ -220,7 +321,9 @@ include __DIR__ . '/../includes/header.php';
 
         Categoría
 
-        <select name="id_categoria" class="<?= $inputClase ?>" required>
+        <select name="id_categoria"
+                class="<?= $inputClase ?>"
+                required>
 
             <option value="">Elige una categoría</option>
 
@@ -272,15 +375,25 @@ include __DIR__ . '/../includes/header.php';
                required>
 
     </label>
+
     <div class="flex gap-3">
+
         <button type="submit"
                 class="bg-moka text-crema rounded-xl px-5 py-2 text-sm font-semibold">
+
             Guardar producto
+
         </button>
+
         <a href="index.php"
            class="bg-durazno rounded-xl px-5 py-2 text-sm">
+
             Cancelar
+
         </a>
+
     </div>
+
 </form>
+
 <?php include __DIR__ . '/../includes/footer.php'; ?>

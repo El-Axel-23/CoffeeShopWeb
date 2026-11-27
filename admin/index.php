@@ -6,34 +6,89 @@ require_once __DIR__ . '/../Login/sesion.php';
 // Candado de seguridad: solo el administrador entra
 verificarSesion('../Login/login.php', 'admin');
 
+// Importar la conexión
 require_once __DIR__ . '/../config/conexion.php';
 
+// Generar token de seguridad
 if (!isset($_SESSION['csrf_admin'])) {
 
     $_SESSION['csrf_admin'] = bin2hex(random_bytes(32));
 }
 
-// Búsqueda por nombre (si no escribió nada, trae todos)
-
+// Búsqueda por nombre
 $q = isset($_GET['q']) && is_string($_GET['q'])
     ? trim($_GET['q']) : '';
 
 $like = '%' . $q . '%';
 
+// Consulta para obtener los productos
 $sql = "SELECT p.*, c.nombre AS categoria
         FROM productos p
         LEFT JOIN categorias c ON c.id_categoria = p.id_categoria
         WHERE p.nombre LIKE ?
         ORDER BY p.id_producto DESC";
 
-$stmt = $pdo->prepare($sql);
+// Preparar la consulta
+$stmt = mysqli_prepare($conexion, $sql);
 
-$stmt->execute([$like]);
+if (!$stmt) {
 
-$resultado = $stmt->fetchAll();
+    error_log(
+        'Error al preparar consulta: ' . mysqli_error($conexion)
+    );
 
-// Mensaje que llega después de agregar, editar o eliminar
+    http_response_code(500);
 
+    exit('No fue posible consultar los productos.');
+}
+
+// Asignar el parámetro de búsqueda
+mysqli_stmt_bind_param($stmt, "s", $like);
+
+// Ejecutar la consulta
+if (!mysqli_stmt_execute($stmt)) {
+
+    error_log(
+        'Error al consultar productos: ' . mysqli_stmt_error($stmt)
+    );
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+
+    exit('No fue posible consultar los productos.');
+}
+
+// Obtener los resultados
+$resProductos = mysqli_stmt_get_result($stmt);
+
+if (!$resProductos) {
+
+    error_log(
+        'Error al obtener productos: ' . mysqli_stmt_error($stmt)
+    );
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+
+    exit('No fue posible obtener los productos.');
+}
+
+$resultado = [];
+
+// Guardar los productos encontrados
+while ($producto = mysqli_fetch_assoc($resProductos)) {
+
+    $resultado[] = $producto;
+}
+
+// Liberar los resultados y cerrar la consulta
+mysqli_free_result($resProductos);
+
+mysqli_stmt_close($stmt);
+
+// Mensaje después de agregar, editar o eliminar
 $msg = $_GET['msg'] ?? '';
 $mensaje = '';
 
@@ -63,6 +118,7 @@ if ($msg == 'creado') {
 }
 
 $base = '../';
+
 $titulo = 'Administrar productos';
 
 include __DIR__ . '/../includes/header.php';
@@ -71,7 +127,9 @@ include __DIR__ . '/../includes/header.php';
 
 <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
 
-    <h1 class="text-xl font-bold">Gestión de productos</h1>
+    <h1 class="text-xl font-bold">
+        Gestión de productos
+    </h1>
 
     <a href="crear.php"
        class="bg-moka text-crema rounded-xl px-4 py-2 text-sm font-semibold">
@@ -101,7 +159,9 @@ include __DIR__ . '/../includes/header.php';
            class="flex-1 bg-durazno border border-moka rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cafe">
 
     <button class="bg-durazno rounded-xl px-4 text-sm">
+
         Buscar
+
     </button>
 
 </form>
@@ -136,7 +196,9 @@ include __DIR__ . '/../includes/header.php';
                 <tr class="border-b border-moka/20 align-middle">
 
                     <td class="py-2 pr-3">
+
                         <?= $row['id_producto'] ?>
+
                     </td>
 
                     <td class="py-2 pr-3">
@@ -151,7 +213,9 @@ include __DIR__ . '/../includes/header.php';
                         <?php else: ?>
 
                             <div class="w-14 h-14 rounded-lg bg-durazno flex items-center justify-center">
+
                                 ☕
+
                             </div>
 
                         <?php endif; ?>
@@ -161,29 +225,41 @@ include __DIR__ . '/../includes/header.php';
                     <td class="py-2 pr-3">
 
                         <p class="font-semibold">
+
                             <?= htmlspecialchars($row['nombre']) ?>
+
                         </p>
 
                         <p class="text-xs max-w-xs truncate">
+
                             <?= htmlspecialchars($row['descripcion'] ?? '') ?>
+
                         </p>
 
                     </td>
 
                     <td class="py-2 pr-3">
+
                         <?= htmlspecialchars($row['categoria'] ?? '-') ?>
+
                     </td>
 
                     <td class="py-2 pr-3">
+
                         $<?= number_format($row['precio'], 2) ?>
+
                     </td>
 
                     <td class="py-2 pr-3">
+
                         <?= $row['destacado'] ? 'Sí' : 'No' ?>
+
                     </td>
 
                     <td class="py-2 pr-3">
+
                         <?= $row['disponible'] ? 'Disponible' : 'No disponible' ?>
+
                     </td>
 
                     <td class="py-2">
@@ -210,7 +286,9 @@ include __DIR__ . '/../includes/header.php';
                                        value="<?= htmlspecialchars($_SESSION['csrf_admin']) ?>">
 
                                 <button class="bg-red-700 text-white rounded-lg px-3 py-1">
+
                                     Eliminar
+
                                 </button>
 
                             </form>
@@ -228,7 +306,9 @@ include __DIR__ . '/../includes/header.php';
             <tr>
 
                 <td colspan="8" class="py-6 text-center">
+
                     No hay productos registrados.
+
                 </td>
 
             </tr>

@@ -6,10 +6,10 @@ require_once __DIR__ . '/../Login/sesion.php';
 // Candado de seguridad
 verificarSesion('../Login/login.php', 'admin');
 
+// Importar la conexión
 require_once __DIR__ . '/../config/conexion.php';
 
 // Validar método de envío
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
     http_response_code(405);
@@ -18,7 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Validar token de seguridad
-
 $token = $_POST['csrf_token'] ?? '';
 
 if (!isset($_SESSION['csrf_admin']) ||
@@ -32,115 +31,256 @@ if (!isset($_SESSION['csrf_admin']) ||
 
 $resultado = 'no_encontrado';
 
-// Llega por POST desde el botón Eliminar
+$transaccionActiva = false;
 
+// Recibir el ID del producto por POST
 $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
 
 if ($id && $id > 0) {
 
     try {
 
-        $pdo->beginTransaction();
+        // Iniciar transacción
+        if (!mysqli_begin_transaction($conexion)) {
 
-        // 1. Buscar el nombre de la imagen antes de borrar el registro
+            throw new RuntimeException(mysqli_error($conexion));
+        }
 
+        $transaccionActiva = true;
+
+        // 1. Buscar la imagen del producto
         $sqlBusq = "SELECT imagen_url
                     FROM productos
                     WHERE id_producto = ?
                     FOR UPDATE";
 
-        $stmt = $pdo->prepare($sqlBusq);
+        $stmt = mysqli_prepare($conexion, $sqlBusq);
 
-        $stmt->execute([$id]);
+        if (!$stmt) {
 
-        $dato = $stmt->fetch();
+            throw new RuntimeException(mysqli_error($conexion));
+        }
 
-        $stmt->closeCursor();
+        mysqli_stmt_bind_param($stmt, "i", $id);
+
+        if (!mysqli_stmt_execute($stmt)) {
+
+            $error = mysqli_stmt_error($stmt);
+
+            mysqli_stmt_close($stmt);
+
+            throw new RuntimeException($error);
+        }
+
+        $resBusq = mysqli_stmt_get_result($stmt);
+
+        if (!$resBusq) {
+
+            $error = mysqli_stmt_error($stmt);
+
+            mysqli_stmt_close($stmt);
+
+            throw new RuntimeException($error);
+        }
+
+        $dato = mysqli_fetch_assoc($resBusq);
+
+        mysqli_free_result($resBusq);
+
+        mysqli_stmt_close($stmt);
 
         if ($dato) {
 
-            // Comprobar si el producto está en algún pedido
-
+            // 2. Comprobar si el producto está en algún pedido
             $sqlPedidos = "SELECT id_detalle
                            FROM pedido_detalle
                            WHERE id_producto = ?
                            LIMIT 1";
 
-            $stmtPedidos = $pdo->prepare($sqlPedidos);
+            $stmtPedidos = mysqli_prepare(
+                $conexion,
+                $sqlPedidos
+            );
 
-            $stmtPedidos->execute([$id]);
+            if (!$stmtPedidos) {
 
-            $enPedidos = $stmtPedidos->fetch();
+                throw new RuntimeException(mysqli_error($conexion));
+            }
 
-            $stmtPedidos->closeCursor();
+            mysqli_stmt_bind_param($stmtPedidos, "i", $id);
 
-            // Comprobar si el producto está en algún carrito
+            if (!mysqli_stmt_execute($stmtPedidos)) {
 
+                $error = mysqli_stmt_error($stmtPedidos);
+
+                mysqli_stmt_close($stmtPedidos);
+
+                throw new RuntimeException($error);
+            }
+
+            $resPedidos = mysqli_stmt_get_result($stmtPedidos);
+
+            if (!$resPedidos) {
+
+                $error = mysqli_stmt_error($stmtPedidos);
+
+                mysqli_stmt_close($stmtPedidos);
+
+                throw new RuntimeException($error);
+            }
+
+            $enPedidos = mysqli_fetch_assoc($resPedidos);
+
+            mysqli_free_result($resPedidos);
+
+            mysqli_stmt_close($stmtPedidos);
+
+            // 3. Comprobar si el producto está en algún carrito
             $sqlCarrito = "SELECT id_item
                            FROM carrito_items
                            WHERE id_producto = ?
                            LIMIT 1";
 
-            $stmtCarrito = $pdo->prepare($sqlCarrito);
+            $stmtCarrito = mysqli_prepare(
+                $conexion,
+                $sqlCarrito
+            );
 
-            $stmtCarrito->execute([$id]);
+            if (!$stmtCarrito) {
 
-            $enCarrito = $stmtCarrito->fetch();
+                throw new RuntimeException(mysqli_error($conexion));
+            }
 
-            $stmtCarrito->closeCursor();
+            mysqli_stmt_bind_param($stmtCarrito, "i", $id);
 
+            if (!mysqli_stmt_execute($stmtCarrito)) {
+
+                $error = mysqli_stmt_error($stmtCarrito);
+
+                mysqli_stmt_close($stmtCarrito);
+
+                throw new RuntimeException($error);
+            }
+
+            $resCarrito = mysqli_stmt_get_result($stmtCarrito);
+
+            if (!$resCarrito) {
+
+                $error = mysqli_stmt_error($stmtCarrito);
+
+                mysqli_stmt_close($stmtCarrito);
+
+                throw new RuntimeException($error);
+            }
+
+            $enCarrito = mysqli_fetch_assoc($resCarrito);
+
+            mysqli_free_result($resCarrito);
+
+            mysqli_stmt_close($stmtCarrito);
+
+            // No eliminar si el producto está en uso
             if ($enPedidos || $enCarrito) {
 
-                $pdo->rollBack();
+                if (!mysqli_rollback($conexion)) {
+
+                    throw new RuntimeException(mysqli_error($conexion));
+                }
+
+                $transaccionActiva = false;
 
                 $resultado = 'en_uso';
 
             } else {
 
-                // 2. Borrar el registro
-
+                // 4. Eliminar el producto
                 $sqlDel = "DELETE FROM productos
                            WHERE id_producto = ?";
 
-                $stmtDel = $pdo->prepare($sqlDel);
+                $stmtDel = mysqli_prepare($conexion, $sqlDel);
 
-                $stmtDel->execute([$id]);
+                if (!$stmtDel) {
 
-                $pdo->commit();
+                    throw new RuntimeException(mysqli_error($conexion));
+                }
+
+                mysqli_stmt_bind_param($stmtDel, "i", $id);
+
+                if (!mysqli_stmt_execute($stmtDel)) {
+
+                    $error = mysqli_stmt_error($stmtDel);
+
+                    mysqli_stmt_close($stmtDel);
+
+                    throw new RuntimeException($error);
+                }
+
+                mysqli_stmt_close($stmtDel);
+
+                // Confirmar la eliminación
+                if (!mysqli_commit($conexion)) {
+
+                    throw new RuntimeException(mysqli_error($conexion));
+                }
+
+                $transaccionActiva = false;
 
                 $resultado = 'eliminado';
 
-                // 3. Ya se borró: ahora sí quitamos el archivo físico
-                // Solo si lo subió el panel, así no borramos tus imágenes originales
+                // 5. Eliminar la imagen del servidor
+                $imagen = $dato['imagen_url'] ?? '';
 
-                $rutaArchivo = __DIR__ . '/../' . $dato['imagen_url'];
+                $rutaArchivo = __DIR__ . '/../' . $imagen;
 
-                if (strpos($dato['imagen_url'], 'img/productos/prod_') === 0 &&
-                    basename($dato['imagen_url']) === substr($dato['imagen_url'], strlen('img/productos/')) &&
-                    is_file($rutaArchivo)) {
+                // Solo eliminar imágenes subidas desde el panel
+                if (
+                    strpos($imagen, 'img/productos/prod_') === 0 &&
+                    basename($imagen) === substr(
+                        $imagen,
+                        strlen('img/productos/')
+                    ) &&
+                    is_file($rutaArchivo)
+                ) {
 
-                    unlink($rutaArchivo);
+                    if (!unlink($rutaArchivo)) {
+
+                        error_log(
+                            'No se pudo eliminar la imagen: ' . $rutaArchivo
+                        );
+                    }
                 }
             }
 
         } else {
 
-            $pdo->rollBack();
+            // El producto no existe
+            if (!mysqli_rollback($conexion)) {
+
+                throw new RuntimeException(mysqli_error($conexion));
+            }
+
+            $transaccionActiva = false;
+
+            $resultado = 'no_encontrado';
         }
 
-    } catch (PDOException $e) {
+    } catch (RuntimeException $e) {
 
-        if ($pdo->inTransaction()) {
+        // Cancelar la transacción si ocurrió un error
+        if ($transaccionActiva) {
 
-            $pdo->rollBack();
+            mysqli_rollback($conexion);
         }
 
-        error_log('Error al eliminar producto: ' . $e->getMessage());
+        error_log(
+            'Error al eliminar producto: ' . $e->getMessage()
+        );
 
         $resultado = 'error';
     }
 }
 
+// Regresar al listado de productos
 header('Location: index.php?msg=' . $resultado, true, 303);
 
 exit;

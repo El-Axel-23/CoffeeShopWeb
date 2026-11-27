@@ -3,18 +3,19 @@
 // Importar el control de sesiones
 require_once __DIR__ . '/../Login/sesion.php';
 
-// Candado de seguridad
+// Comprobar que el usuario sea administrador
 verificarSesion('../Login/login.php', 'admin');
 
+// Importar la conexión
 require_once __DIR__ . '/../config/conexion.php';
 
+// Generar token de seguridad
 if (!isset($_SESSION['csrf_admin'])) {
 
     $_SESSION['csrf_admin'] = bin2hex(random_bytes(32));
 }
 
 // 1. Recibir el ID de la URL y buscar el producto
-
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
 $producto = null;
@@ -23,15 +24,49 @@ if ($id && $id > 0) {
 
     $sql = "SELECT * FROM productos WHERE id_producto = ?";
 
-    $stmt = $pdo->prepare($sql);
+    $stmt = mysqli_prepare($conexion, $sql);
 
-    $stmt->execute([$id]);
+    if (!$stmt) {
 
-    $producto = $stmt->fetch();
+        error_log("Error al preparar consulta: " . mysqli_error($conexion));
+
+        http_response_code(500);
+
+        exit("No fue posible consultar el producto.");
+    }
+
+    mysqli_stmt_bind_param($stmt, "i", $id);
+
+    if (!mysqli_stmt_execute($stmt)) {
+
+        error_log("Error al consultar producto: " . mysqli_stmt_error($stmt));
+
+        mysqli_stmt_close($stmt);
+
+        http_response_code(500);
+
+        exit("No fue posible consultar el producto.");
+    }
+
+    $resultado = mysqli_stmt_get_result($stmt);
+
+    if (!$resultado) {
+
+        mysqli_stmt_close($stmt);
+
+        http_response_code(500);
+
+        exit("No fue posible obtener el producto.");
+    }
+
+    $producto = mysqli_fetch_assoc($resultado);
+
+    mysqli_free_result($resultado);
+
+    mysqli_stmt_close($stmt);
 }
 
-// 2. Si el ID no existe o alteraron la URL, regresar al listado
-
+// 2. Si el producto no existe, regresar al listado
 if (!$producto) {
 
     header('Location: index.php');
@@ -39,8 +74,7 @@ if (!$producto) {
     exit;
 }
 
-// Al abrir la página, el formulario trae los datos actuales
-
+// Obtener los datos actuales del producto
 $error = '';
 $ext = '';
 
@@ -51,14 +85,35 @@ $id_categoria = $producto['id_categoria'];
 $destacado = $producto['destacado'];
 $disponible = $producto['disponible'];
 
-$resCategorias = $pdo->query(
-    "SELECT * FROM categorias ORDER BY orden"
-)->fetchAll();
+// Obtener las categorías
+$sqlCategorias = "SELECT * FROM categorias ORDER BY orden";
 
+$resultadoCategorias = mysqli_query($conexion, $sqlCategorias);
+
+if (!$resultadoCategorias) {
+
+    error_log("Error al consultar categorías: " . mysqli_error($conexion));
+
+    http_response_code(500);
+
+    exit("No fue posible obtener las categorías.");
+}
+
+$resCategorias = [];
+
+while ($categoria = mysqli_fetch_assoc($resultadoCategorias)) {
+
+    $resCategorias[] = $categoria;
+}
+
+mysqli_free_result($resultadoCategorias);
+
+// Procesar el formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $token = $_POST['csrf_token'] ?? '';
 
+    // Validar el token de seguridad
     if (!is_string($token) || !hash_equals($_SESSION['csrf_admin'], $token)) {
 
         http_response_code(403);
@@ -66,6 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit('Solicitud no válida.');
     }
 
+    // Recibir los datos del formulario
     $nombre = isset($_POST['nombre']) && is_string($_POST['nombre'])
         ? trim($_POST['nombre']) : '';
 
@@ -75,23 +131,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $precio = isset($_POST['precio']) && is_string($_POST['precio'])
         ? $_POST['precio'] : '';
 
-    $id_categoria = filter_input(INPUT_POST, 'id_categoria', FILTER_VALIDATE_INT);
+    $id_categoria = filter_input(
+        INPUT_POST,
+        'id_categoria',
+        FILTER_VALIDATE_INT
+    );
 
     $destacado = isset($_POST['destacado']) ? 1 : 0;
     $disponible = isset($_POST['disponible']) ? 1 : 0;
+
     $imagen = $_FILES['imagen'] ?? null;
 
     $rutaNueva = null;
 
-    // Si no hay imagen nueva, se queda la actual
+    // Conservar la imagen actual
     $rutaBD = $producto['imagen_url'];
 
-    // ¿Eligió una imagen nueva? (en editar es opcional)
+    // Comprobar si seleccionó una imagen nueva
+    $hayImagenNueva = (
+        $imagen && $imagen['error'] !== UPLOAD_ERR_NO_FILE
+    );
 
-    $hayImagenNueva = ($imagen && $imagen['error'] !== UPLOAD_ERR_NO_FILE);
-
-    // 1. Validar los datos de texto
-
+    // Validar los datos del producto
     if ($nombre == '') {
 
         $error = 'El nombre es obligatorio.';
@@ -108,10 +169,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $error = 'Elige una categoría.';
 
-    // 2. Validar la imagen solo si eligió una nueva
-
     } elseif ($hayImagenNueva) {
 
+        // Validar la imagen nueva
         if ($imagen['error'] !== UPLOAD_ERR_OK) {
 
             $error = 'Ocurrió un error al subir el archivo.';
@@ -124,26 +184,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $extPermitidas = ['jpg', 'jpeg', 'png', 'webp'];
 
-            $mimePermitidos = ['image/jpeg', 'image/png', 'image/webp'];
+            $mimePermitidos = [
+                'image/jpeg',
+                'image/png',
+                'image/webp'
+            ];
 
-            $ext = strtolower(pathinfo($imagen['name'], PATHINFO_EXTENSION));
+            $ext = strtolower(
+                pathinfo($imagen['name'], PATHINFO_EXTENSION)
+            );
 
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
 
-            $mimeReal = finfo_file($finfo, $imagen['tmp_name']);
+            if ($finfo === false) {
 
-            finfo_close($finfo);
+                $error = 'No fue posible comprobar el formato de la imagen.';
 
-            if (!in_array($ext, $extPermitidas, true) ||
-                !in_array($mimeReal, $mimePermitidos, true)) {
+            } else {
 
-                $error = 'Formato no válido. Solo se admiten archivos JPG, PNG y WEBP.';
+                $mimeReal = finfo_file($finfo, $imagen['tmp_name']);
+
+                finfo_close($finfo);
+
+                if (!in_array($ext, $extPermitidas, true) ||
+                    !in_array($mimeReal, $mimePermitidos, true)) {
+
+                    $error = 'Formato no válido. Solo se admiten archivos JPG, PNG y WEBP.';
+                }
             }
         }
     }
 
-    // 3. Guardar
-
+    // Guardar la imagen nueva
     if ($error == '') {
 
         if ($hayImagenNueva) {
@@ -152,12 +224,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $dirDestino = __DIR__ . '/../img/productos/';
 
+            // Crear la carpeta si no existe
             if (!is_dir($dirDestino)) {
 
                 mkdir($dirDestino, 0755, true);
             }
 
-            if (move_uploaded_file($imagen['tmp_name'], $dirDestino . $nombreUnico)) {
+            if (move_uploaded_file(
+                $imagen['tmp_name'],
+                $dirDestino . $nombreUnico
+            )) {
 
                 $rutaBD = 'img/productos/' . $nombreUnico;
 
@@ -170,62 +246,100 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Actualizar el producto
     if ($error == '') {
 
-        try {
+        $sql = "UPDATE productos
+                SET id_categoria = ?,
+                    nombre = ?,
+                    descripcion = ?,
+                    precio = ?,
+                    imagen_url = ?,
+                    destacado = ?,
+                    disponible = ?
+                WHERE id_producto = ?";
 
-            $sql = "UPDATE productos
-                    SET id_categoria = ?,
-                        nombre = ?,
-                        descripcion = ?,
-                        precio = ?,
-                        imagen_url = ?,
-                        destacado = ?,
-                        disponible = ?
-                    WHERE id_producto = ?";
+        // Preparar la consulta
+        $stmt = mysqli_prepare($conexion, $sql);
 
-            $stmt = $pdo->prepare($sql);
+        if (!$stmt) {
 
-            $stmt->execute([
+            error_log(
+                'Error al preparar consulta: ' .
+                mysqli_error($conexion)
+            );
+
+            $error = 'Error al preparar la actualización del producto.';
+
+        } else {
+
+            // Convertir el precio a decimal
+            $precioProducto = (float) $precio;
+
+            // Asignar los parámetros
+            $parametros = mysqli_stmt_bind_param(
+                $stmt,
+                "issdsiii",
                 $id_categoria,
                 $nombre,
                 $descripcion,
-                $precio,
+                $precioProducto,
                 $rutaBD,
                 $destacado,
                 $disponible,
                 $id
-            ]);
+            );
 
-            // Si cambió la imagen, borrar la anterior del disco
-            // Solo si la subió el panel, así no borramos las imágenes originales
+            // Ejecutar la actualización
+            if ($parametros && mysqli_stmt_execute($stmt)) {
 
-            if ($hayImagenNueva) {
+                mysqli_stmt_close($stmt);
 
-                $vieja = __DIR__ . '/../' . $producto['imagen_url'];
+                // Eliminar la imagen anterior si fue reemplazada
+                if ($hayImagenNueva) {
 
-                if (strpos($producto['imagen_url'], 'img/productos/prod_') === 0 &&
-                    basename($producto['imagen_url']) === substr($producto['imagen_url'], strlen('img/productos/')) &&
-                    is_file($vieja)) {
+                    $imagenAnterior = $producto['imagen_url'] ?? '';
 
-                    unlink($vieja);
+                    $vieja = __DIR__ . '/../' . $imagenAnterior;
+
+                    // Solo eliminar imágenes subidas desde el panel
+                    if (
+                        strpos($imagenAnterior, 'img/productos/prod_') === 0 &&
+                        basename($imagenAnterior) === substr(
+                            $imagenAnterior,
+                            strlen('img/productos/')
+                        ) &&
+                        is_file($vieja)
+                    ) {
+
+                        unlink($vieja);
+                    }
                 }
+
+                header('Location: index.php?msg=editado', true, 303);
+
+                exit;
+
+            } else {
+
+                error_log(
+                    'Error al editar producto: ' .
+                    mysqli_stmt_error($stmt)
+                );
+
+                $error = 'Error al actualizar en la base de datos.';
             }
 
-            header('Location: index.php?msg=editado', true, 303);
+            mysqli_stmt_close($stmt);
+        }
 
-            exit;
-
-        } catch (PDOException $e) {
+        // Eliminar la imagen nueva si falló la actualización
+        if ($error != '') {
 
             if ($rutaNueva !== null && is_file($rutaNueva)) {
 
                 unlink($rutaNueva);
             }
-
-            error_log('Error al editar producto: ' . $e->getMessage());
-
-            $error = 'Error al actualizar en la base de datos.';
         }
     }
 }
@@ -240,9 +354,13 @@ include __DIR__ . '/../includes/header.php';
 
 ?>
 
-<h1 class="text-xl font-bold mb-2">Editar producto</h1>
+<h1 class="text-xl font-bold mb-2">
+    Editar producto
+</h1>
 
-<a href="index.php" class="text-sm underline">← Ver listado</a>
+<a href="index.php" class="text-sm underline">
+    ← Ver listado
+</a>
 
 <?php if ($error != ''): ?>
 
@@ -304,7 +422,9 @@ include __DIR__ . '/../includes/header.php';
 
         Categoría
 
-        <select name="id_categoria" class="<?= $inputClase ?>" required>
+        <select name="id_categoria"
+                class="<?= $inputClase ?>"
+                required>
 
             <option value="">Elige una categoría</option>
 
@@ -357,7 +477,9 @@ include __DIR__ . '/../includes/header.php';
                  alt="Imagen actual">
 
             <span class="text-xs font-normal">
+
                 Si eliges otra imagen, reemplaza la actual.
+
             </span>
 
         <?php endif; ?>
@@ -388,4 +510,5 @@ include __DIR__ . '/../includes/header.php';
     </div>
 
 </form>
+
 <?php include __DIR__ . '/../includes/footer.php'; ?>

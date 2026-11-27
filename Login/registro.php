@@ -122,13 +122,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         WHERE correo = ?
                         LIMIT 1";
 
-                $stmt = $pdo->prepare($sql);
+                $stmt = mysqli_prepare($conexion, $sql);
 
-                $stmt->execute([$correo]);
+                if (!$stmt) {
 
-                $usuario = $stmt->fetch();
+                    throw new RuntimeException(
+                        mysqli_error($conexion)
+                    );
+                }
 
-                if ($usuario) {
+                // Asignar el correo y ejecutar la consulta
+                if (!mysqli_stmt_bind_param($stmt, "s", $correo) ||
+                    !mysqli_stmt_execute($stmt) ||
+                    !mysqli_stmt_store_result($stmt)) {
+
+                    $mensajeError = mysqli_stmt_error($stmt);
+
+                    mysqli_stmt_close($stmt);
+
+                    throw new RuntimeException($mensajeError);
+                }
+
+                // Comprobar si existe el usuario
+                $existeUsuario = mysqli_stmt_num_rows($stmt) > 0;
+
+                mysqli_stmt_close($stmt);
+
+                if ($existeUsuario) {
 
                     $error = 'Este correo electrónico ya está registrado.';
 
@@ -139,6 +159,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $contrasena,
                         PASSWORD_DEFAULT
                     );
+
+                    // Valores del nuevo usuario
+                    $proveedor = 'local';
+                    $rol = 'cliente';
+                    $activo = 1;
 
                     // Registrar al nuevo usuario
                     $sql = "INSERT INTO usuarios (
@@ -151,29 +176,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 activo
                             ) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
-                    $stmt = $pdo->prepare($sql);
+                    // Preparar la consulta
+                    $stmt = mysqli_prepare($conexion, $sql);
 
-                    $stmt->execute([
-                        $nombre,
-                        $correo,
-                        $contrasenaHash,
-                        'local',
-                        $aceptoTerminos,
-                        'cliente',
-                        1
-                    ]);
+                    if (!$stmt) {
+
+                        throw new RuntimeException(
+                            mysqli_error($conexion)
+                        );
+                    }
+
+                    // Asignar los parámetros
+                    if (!mysqli_stmt_bind_param(
+                            $stmt,
+                            "ssssisi",
+                            $nombre,
+                            $correo,
+                            $contrasenaHash,
+                            $proveedor,
+                            $aceptoTerminos,
+                            $rol,
+                            $activo
+                        ) ||
+                        !mysqli_stmt_execute($stmt)) {
+
+                        $codigoError = mysqli_stmt_errno($stmt);
+
+                        $mensajeError = mysqli_stmt_error($stmt);
+
+                        mysqli_stmt_close($stmt);
+
+                        throw new RuntimeException(
+                            $mensajeError,
+                            $codigoError
+                        );
+                    }
 
                     // Obtener el ID del usuario registrado
-                    $idUsuario = $pdo->lastInsertId();
+                    $idUsuario = mysqli_insert_id($conexion);
+
+                    mysqli_stmt_close($stmt);
 
                     // Regenerar identificador de sesión
-                    session_regenerate_id(true);
+                    if (!session_regenerate_id(true)) {
+
+                        error_log('No fue posible regenerar la sesión.');
+
+                        $_SESSION['registro_exitoso'] = true;
+
+                        unset($_SESSION['csrf_registro']);
+
+                        header('Location: login.php', true, 303);
+
+                        exit;
+                    }
 
                     // Guardar datos del nuevo usuario
                     $_SESSION['id_usuario'] = (int) $idUsuario;
+
                     $_SESSION['nombre_completo'] = $nombre;
+
                     $_SESSION['correo'] = $correo;
-                    $_SESSION['rol'] = 'cliente';
+
+                    $_SESSION['rol'] = $rol;
 
                     // Registrar última actividad
                     $_SESSION['ultima_actividad'] = time();
@@ -199,10 +264,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit;
                 }
 
-            } catch (PDOException $e) {
+            } catch (RuntimeException $e) {
 
                 // Comprobar si el correo está duplicado
-                if (($e->errorInfo[1] ?? 0) == 1062) {
+                if ($e->getCode() === 1062) {
 
                     $error = 'Este correo electrónico ya está registrado.';
 
@@ -232,6 +297,13 @@ if (!is_string($correo)) {
 
 // Cargar la vista de registro
 $html = file_get_contents(__DIR__ . '/registro.html');
+
+if ($html === false || trim($html) === '') {
+
+    http_response_code(500);
+
+    exit('No fue posible cargar la vista de registro.');
+}
 
 // Mostrar u ocultar mensaje de error
 $claseError = $error === '' ? 'd-none' : '';

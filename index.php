@@ -2,29 +2,68 @@
 
 require_once __DIR__ . '/Login/sesion.php';
 
+// Iniciar sesión
 if (session_status() !== PHP_SESSION_ACTIVE) {
+
     session_start();
 }
 
 // Validar la sesión solamente si inició sesión
 if (isset($_SESSION['id_usuario'])) {
+
     verificarSesion('Login/login.php');
 }
 
 header('Cache-Control: no-store');
 
+// Conexión a la base de datos
 require_once __DIR__ . '/config/conexion.php';
 
+// Obtener el texto de búsqueda
 $q = isset($_GET['q']) && is_string($_GET['q'])
-    ? trim($_GET['q']) : '';
+    ? trim($_GET['q'])
+    : '';
 
-$cat = filter_input(INPUT_GET, 'cat', FILTER_VALIDATE_INT);
+// Obtener la categoría seleccionada
+$cat = filter_input(
+    INPUT_GET,
+    'cat',
+    FILTER_VALIDATE_INT
+);
+
 $cat = ($cat > 0) ? $cat : 0;
 
 // Obtener las categorías
-$resCategorias = $pdo->query(
-    "SELECT * FROM categorias ORDER BY orden"
-)->fetchAll();
+$sqlCategorias = "SELECT * FROM categorias ORDER BY orden";
+
+$resultadoCategorias = mysqli_query(
+    $conexion,
+    $sqlCategorias
+);
+
+// Validar la consulta
+if (!$resultadoCategorias) {
+
+    error_log(
+        'Error al consultar categorías: ' .
+        mysqli_error($conexion)
+    );
+
+    http_response_code(500);
+
+    exit('No fue posible consultar las categorías.');
+}
+
+// Guardar las categorías
+$resCategorias = [];
+
+while ($categoria = mysqli_fetch_assoc($resultadoCategorias)) {
+
+    $resCategorias[] = $categoria;
+}
+
+// Liberar los resultados
+mysqli_free_result($resultadoCategorias);
 
 $titulo = 'Coffee Shop - Inicio';
 
@@ -153,6 +192,7 @@ include __DIR__ . '/includes/header.php';
         }
 
         if (!respuesta.ok) {
+
             throw new Error('Error en la consulta');
         }
 

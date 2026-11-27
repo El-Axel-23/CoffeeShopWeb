@@ -7,9 +7,10 @@ verificarSesion('../Login/login.php');
 
 header('Cache-Control: no-store');
 
+// Importar la conexión
 require_once __DIR__ . '/../config/conexion.php';
 
-$idUsuario = $_SESSION['id_usuario'];
+$idUsuario = (int) $_SESSION['id_usuario'];
 
 // Obtener el identificador del pedido
 $idPedido = filter_input(
@@ -38,14 +39,52 @@ $sql = "SELECT id_pedido,
         WHERE id_pedido = ?
         AND id_usuario = ?";
 
-$stmt = $pdo->prepare($sql);
+// Preparar la consulta
+$stmt = mysqli_prepare($conexion, $sql);
 
-$stmt->execute([
-    $idPedido,
-    $idUsuario
-]);
+if (!$stmt) {
 
-$pedido = $stmt->fetch();
+    error_log('Error al preparar pedido: ' . mysqli_error($conexion));
+
+    http_response_code(500);
+    exit('No fue posible consultar el pedido.');
+}
+
+// Asignar los parámetros
+if (!mysqli_stmt_bind_param(
+        $stmt,
+        "ii",
+        $idPedido,
+        $idUsuario
+    ) ||
+    !mysqli_stmt_execute($stmt)) {
+
+    error_log('Error al consultar pedido: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible consultar el pedido.');
+}
+
+// Obtener el resultado
+$resultado = mysqli_stmt_get_result($stmt);
+
+if (!$resultado) {
+
+    error_log('Error al obtener pedido: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible obtener el pedido.');
+}
+
+$pedido = mysqli_fetch_assoc($resultado);
+
+mysqli_free_result($resultado);
+
+mysqli_stmt_close($stmt);
 
 // Comprobar que el pedido pertenezca al usuario
 if (!$pedido) {
@@ -67,10 +106,51 @@ $sql = "SELECT d.id_detalle,
         WHERE d.id_pedido = ?
         ORDER BY d.id_detalle";
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$idPedido]);
+$stmt = mysqli_prepare($conexion, $sql);
 
-$productos = $stmt->fetchAll();
+if (!$stmt) {
+
+    error_log('Error al preparar productos: ' . mysqli_error($conexion));
+
+    http_response_code(500);
+    exit('No fue posible consultar los productos.');
+}
+
+// Asignar el ID del pedido
+if (!mysqli_stmt_bind_param($stmt, "i", $idPedido) ||
+    !mysqli_stmt_execute($stmt)) {
+
+    error_log('Error al consultar productos: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible consultar los productos.');
+}
+
+$resultadoProductos = mysqli_stmt_get_result($stmt);
+
+if (!$resultadoProductos) {
+
+    error_log('Error al obtener productos: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible obtener los productos.');
+}
+
+$productos = [];
+
+// Guardar los productos comprados
+while ($producto = mysqli_fetch_assoc($resultadoProductos)) {
+
+    $productos[] = $producto;
+}
+
+mysqli_free_result($resultadoProductos);
+
+mysqli_stmt_close($stmt);
 
 // Consultar las personalizaciones de los productos
 $sql = "SELECT d.id_detalle,
@@ -83,10 +163,51 @@ $sql = "SELECT d.id_detalle,
         ON po.id_detalle = d.id_detalle
         WHERE d.id_pedido = ?";
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$idPedido]);
+$stmt = mysqli_prepare($conexion, $sql);
 
-$opciones = $stmt->fetchAll();
+if (!$stmt) {
+
+    error_log('Error al preparar opciones: ' . mysqli_error($conexion));
+
+    http_response_code(500);
+    exit('No fue posible consultar las personalizaciones.');
+}
+
+// Asignar el ID del pedido
+if (!mysqli_stmt_bind_param($stmt, "i", $idPedido) ||
+    !mysqli_stmt_execute($stmt)) {
+
+    error_log('Error al consultar opciones: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible consultar las personalizaciones.');
+}
+
+$resultadoOpciones = mysqli_stmt_get_result($stmt);
+
+if (!$resultadoOpciones) {
+
+    error_log('Error al obtener opciones: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible obtener las personalizaciones.');
+}
+
+$opciones = [];
+
+// Guardar las personalizaciones
+while ($opcion = mysqli_fetch_assoc($resultadoOpciones)) {
+
+    $opciones[] = $opcion;
+}
+
+mysqli_free_result($resultadoOpciones);
+
+mysqli_stmt_close($stmt);
 
 // Agrupar las personalizaciones por producto
 $opcionesProducto = [];
@@ -110,10 +231,46 @@ $sql = "SELECT COALESCE(SUM(cantidad), 0)
         FROM carrito_items
         WHERE id_usuario = ?";
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$idUsuario]);
+$stmt = mysqli_prepare($conexion, $sql);
 
-$cantidadCarrito = (int) $stmt->fetchColumn();
+if (!$stmt) {
+
+    error_log('Error al preparar carrito: ' . mysqli_error($conexion));
+
+    http_response_code(500);
+    exit('No fue posible consultar el carrito.');
+}
+
+// Asignar el ID del usuario
+if (!mysqli_stmt_bind_param($stmt, "i", $idUsuario) ||
+    !mysqli_stmt_execute($stmt)) {
+
+    error_log('Error al consultar carrito: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible consultar el carrito.');
+}
+
+// Obtener la cantidad del carrito
+$cantidadCarrito = 0;
+
+if (!mysqli_stmt_bind_result($stmt, $cantidadCarrito) ||
+    mysqli_stmt_fetch($stmt) !== true) {
+
+    error_log('Error al obtener la cantidad del carrito: ' .
+        mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible obtener la cantidad del carrito.');
+}
+
+$cantidadCarrito = (int) $cantidadCarrito;
+
+mysqli_stmt_close($stmt);
 
 // Obtener las iniciales del usuario
 $palabras = explode(

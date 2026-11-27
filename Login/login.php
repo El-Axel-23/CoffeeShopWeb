@@ -127,11 +127,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         WHERE correo = ?
                         LIMIT 1";
 
-                $stmt = $pdo->prepare($sql);
+                // Preparar la consulta
+                $stmt = mysqli_prepare($conexion, $sql);
 
-                $stmt->execute([$correo]);
+                if (!$stmt) {
 
-                $usuario = $stmt->fetch();
+                    throw new RuntimeException(
+                        mysqli_error($conexion)
+                    );
+                }
+
+                // Asignar el correo
+                if (!mysqli_stmt_bind_param($stmt, "s", $correo) ||
+                    !mysqli_stmt_execute($stmt)) {
+
+                    $mensajeError = mysqli_stmt_error($stmt);
+
+                    mysqli_stmt_close($stmt);
+
+                    throw new RuntimeException($mensajeError);
+                }
+
+                // Obtener el resultado
+                $resultado = mysqli_stmt_get_result($stmt);
+
+                if (!$resultado) {
+
+                    $mensajeError = mysqli_stmt_error($stmt);
+
+                    mysqli_stmt_close($stmt);
+
+                    throw new RuntimeException($mensajeError);
+                }
+
+                // Obtener los datos del usuario
+                $usuario = mysqli_fetch_assoc($resultado);
+
+                mysqli_free_result($resultado);
+
+                mysqli_stmt_close($stmt);
 
                 // Validar usuario y contraseña
                 if ($usuario &&
@@ -144,12 +178,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     )) {
 
                     // Regenerar identificador de sesión
-                    session_regenerate_id(true);
+                    if (!session_regenerate_id(true)) {
+
+                        throw new RuntimeException(
+                            'No fue posible regenerar la sesión.'
+                        );
+                    }
 
                     // Guardar datos del usuario
-                    $_SESSION['id_usuario'] = $usuario['id_usuario'];
+                    $_SESSION['id_usuario'] = (int) $usuario['id_usuario'];
+
                     $_SESSION['nombre_completo'] = $usuario['nombre_completo'];
+
                     $_SESSION['correo'] = $usuario['correo'];
+
                     $_SESSION['rol'] = $usuario['rol'];
 
                     // Registrar última actividad
@@ -189,9 +231,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'Correo o contraseña incorrectos.';
                 }
 
-            } catch (PDOException $e) {
+            } catch (RuntimeException $e) {
 
-                error_log('Error en login: ' . $e->getMessage());
+                error_log(
+                    'Error en login: ' . $e->getMessage()
+                );
 
                 $error = 'No fue posible iniciar sesión. Intenta nuevamente.';
             }
@@ -201,6 +245,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Cargar la vista HTML
 $html = file_get_contents(__DIR__ . '/login.html');
+
+if ($html === false || trim($html) === '') {
+
+    http_response_code(500);
+
+    exit('No fue posible cargar la vista del inicio de sesión.');
+}
 
 // Mostrar u ocultar mensaje de error
 $claseError = 'd-none';

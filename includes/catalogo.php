@@ -1,5 +1,6 @@
 <?php
 
+// Importar la conexión
 require_once __DIR__ . '/../config/conexion.php';
 
 // Comprobar si el usuario inició sesión
@@ -20,18 +21,48 @@ if ($sesionActiva) {
                      FROM favoritos
                      WHERE id_usuario = ?";
 
-    $stmtFavoritos = $pdo->prepare($sqlFavoritos);
+    $idUsuario = (int) $_SESSION['id_usuario'];
 
-    $stmtFavoritos->execute([
-        $_SESSION['id_usuario']
-    ]);
+    $stmtFavoritos = mysqli_prepare($conexion, $sqlFavoritos);
 
-    $resultadosFavoritos = $stmtFavoritos->fetchAll();
+    if (!$stmtFavoritos) {
 
-    foreach ($resultadosFavoritos as $favorito) {
+        error_log('Error al preparar favoritos: ' . mysqli_error($conexion));
 
-        $favoritosUsuario[(int) $favorito['id_producto']] = true;
+        http_response_code(500);
+        exit('No fue posible consultar los favoritos.');
     }
+
+    // Asignar el ID del usuario y ejecutar la consulta
+    if (!mysqli_stmt_bind_param($stmtFavoritos, "i", $idUsuario) ||
+        !mysqli_stmt_execute($stmtFavoritos) ||
+        !mysqli_stmt_bind_result($stmtFavoritos, $idFavorito)) {
+
+        error_log('Error al consultar favoritos: ' . mysqli_stmt_error($stmtFavoritos));
+
+        mysqli_stmt_close($stmtFavoritos);
+
+        http_response_code(500);
+        exit('No fue posible consultar los favoritos.');
+    }
+
+    // Guardar los favoritos del usuario
+    while (($lectura = mysqli_stmt_fetch($stmtFavoritos)) === true) {
+
+        $favoritosUsuario[(int) $idFavorito] = true;
+    }
+
+    if ($lectura === false) {
+
+        error_log('Error al leer favoritos: ' . mysqli_stmt_error($stmtFavoritos));
+
+        mysqli_stmt_close($stmtFavoritos);
+
+        http_response_code(500);
+        exit('No fue posible obtener los favoritos.');
+    }
+
+    mysqli_stmt_close($stmtFavoritos);
 }
 
 // Mostrar el corazón del producto
@@ -103,13 +134,14 @@ $q = $q ?? '';
 $cat = (int) ($cat ?? 0);
 
 $filtrando = ($q !== '' || $cat > 0);
+
 $like = '%' . $q . '%';
 
 $filtroCategoria = '';
 
 if ($cat > 0) {
 
-    $filtroCategoria = ' AND id_categoria = :categoria';
+    $filtroCategoria = ' AND id_categoria = ?';
 }
 
 $resDestacados = [];
@@ -123,9 +155,26 @@ if (!$filtrando) {
                       AND destacado = 1
                       ORDER BY id_producto";
 
-    $stmtDestacados = $pdo->query($sqlDestacados);
+    $resultadoDestacados = mysqli_query(
+        $conexion,
+        $sqlDestacados
+    );
 
-    $resDestacados = $stmtDestacados->fetchAll();
+    if (!$resultadoDestacados) {
+
+        error_log('Error al consultar destacados: ' . mysqli_error($conexion));
+
+        http_response_code(500);
+        exit('No fue posible consultar los productos destacados.');
+    }
+
+    // Guardar los productos destacados
+    while ($producto = mysqli_fetch_assoc($resultadoDestacados)) {
+
+        $resDestacados[] = $producto;
+    }
+
+    mysqli_free_result($resultadoDestacados);
 
     $soloNormales = ' AND destacado = 0';
 }
@@ -133,23 +182,76 @@ if (!$filtrando) {
 // Consultar productos del menú
 $sqlMenu = "SELECT * FROM productos
             WHERE disponible = 1
-            AND nombre LIKE :nombre"
+            AND nombre LIKE ?"
             . $filtroCategoria
             . $soloNormales
             . " ORDER BY id_producto";
 
-$stmt = $pdo->prepare($sqlMenu);
+// Preparar la consulta
+$stmt = mysqli_prepare($conexion, $sqlMenu);
 
-$stmt->bindValue(':nombre', $like, PDO::PARAM_STR);
+if (!$stmt) {
 
-if ($cat > 0) {
+    error_log('Error al preparar menú: ' . mysqli_error($conexion));
 
-    $stmt->bindValue(':categoria', $cat, PDO::PARAM_INT);
+    http_response_code(500);
+    exit('No fue posible consultar el menú.');
 }
 
-$stmt->execute();
+// Asignar los parámetros según el filtro
+if ($cat > 0) {
 
-$resMenu = $stmt->fetchAll();
+    $parametros = mysqli_stmt_bind_param(
+        $stmt,
+        "si",
+        $like,
+        $cat
+    );
+
+} else {
+
+    $parametros = mysqli_stmt_bind_param(
+        $stmt,
+        "s",
+        $like
+    );
+}
+
+// Ejecutar la consulta
+if (!$parametros || !mysqli_stmt_execute($stmt)) {
+
+    error_log('Error al consultar menú: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible consultar el menú.');
+}
+
+// Obtener los resultados
+$resultadoMenu = mysqli_stmt_get_result($stmt);
+
+if (!$resultadoMenu) {
+
+    error_log('Error al obtener menú: ' . mysqli_stmt_error($stmt));
+
+    mysqli_stmt_close($stmt);
+
+    http_response_code(500);
+    exit('No fue posible obtener los productos del menú.');
+}
+
+$resMenu = [];
+
+// Guardar los productos del menú
+while ($producto = mysqli_fetch_assoc($resultadoMenu)) {
+
+    $resMenu[] = $producto;
+}
+
+mysqli_free_result($resultadoMenu);
+
+mysqli_stmt_close($stmt);
 
 ?>
 

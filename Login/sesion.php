@@ -22,6 +22,7 @@ function finalizarSesion($rutaLogin, $motivo) {
 
     $_SESSION = array();
 
+    // Eliminar la cookie de sesión
     if (ini_get('session.use_cookies')) {
 
         $params = session_get_cookie_params();
@@ -65,9 +66,11 @@ function verificarSesion($rutaLogin, $rolRequerido = null) {
     }
 
     // Conexión a la base de datos
-    global $pdo;
+    global $conexion;
 
     require_once __DIR__ . '/../config/conexion.php';
+
+    $idUsuario = (int) $_SESSION['id_usuario'];
 
     try {
 
@@ -82,12 +85,47 @@ function verificarSesion($rutaLogin, $rolRequerido = null) {
                 WHERE id_usuario = ?
                 LIMIT 1";
 
-        $stmt = $pdo->prepare($sql);
+        // Preparar la consulta
+        $stmt = mysqli_prepare($conexion, $sql);
 
-        $stmt->execute([$_SESSION['id_usuario']]);
+        if (!$stmt) {
 
-        $usuario = $stmt->fetch();
+            throw new RuntimeException(
+                mysqli_error($conexion)
+            );
+        }
 
+        // Asignar el ID del usuario y ejecutar
+        if (!mysqli_stmt_bind_param($stmt, "i", $idUsuario) ||
+            !mysqli_stmt_execute($stmt)) {
+
+            $mensajeError = mysqli_stmt_error($stmt);
+
+            mysqli_stmt_close($stmt);
+
+            throw new RuntimeException($mensajeError);
+        }
+
+        // Obtener los resultados
+        $resultado = mysqli_stmt_get_result($stmt);
+
+        if (!$resultado) {
+
+            $mensajeError = mysqli_stmt_error($stmt);
+
+            mysqli_stmt_close($stmt);
+
+            throw new RuntimeException($mensajeError);
+        }
+
+        // Obtener los datos del usuario
+        $usuario = mysqli_fetch_assoc($resultado);
+
+        mysqli_free_result($resultado);
+
+        mysqli_stmt_close($stmt);
+
+        // Comprobar que el usuario exista y siga activo
         if (!$usuario || (int) $usuario['activo'] !== 1) {
 
             finalizarSesion($rutaLogin, 'usuario_inactivo');
@@ -110,7 +148,9 @@ function verificarSesion($rutaLogin, $rolRequerido = null) {
 
         // Actualizar los datos de la sesión
         $_SESSION['nombre_completo'] = $usuario['nombre_completo'];
+
         $_SESSION['correo'] = $usuario['correo'];
+
         $_SESSION['rol'] = $usuario['rol'];
 
         // Validar el rol del usuario
@@ -125,9 +165,11 @@ function verificarSesion($rutaLogin, $rolRequerido = null) {
         // Actualizar el tiempo de actividad
         $_SESSION['ultima_actividad'] = time();
 
-    } catch (PDOException $e) {
+    } catch (RuntimeException $e) {
 
-        error_log('Error de sesión: ' . $e->getMessage());
+        error_log(
+            'Error de sesión: ' . $e->getMessage()
+        );
 
         http_response_code(500);
 
